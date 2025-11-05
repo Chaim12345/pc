@@ -5,6 +5,7 @@ import { AuthProvider } from './contexts/AuthContext'
 import { SocketProvider } from './contexts/SocketContext'
 import { ToastProvider } from './contexts/ToastContext'
 import { ThemeProvider } from './contexts/ThemeContext'
+import { PageProvider } from './contexts/PageContext'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -23,7 +24,9 @@ function App() {
           <AuthProvider>
             <SocketProvider>
               <ToastProvider>
-                <AppRoutes />
+                <PageProvider>
+                  <AppRoutes />
+                </PageProvider>
               </ToastProvider>
             </SocketProvider>
           </AuthProvider>

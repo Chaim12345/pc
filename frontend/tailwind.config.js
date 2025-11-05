@@ -7,23 +7,39 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Monday.com inspired color palette
+        // Monday.com Vibe Design System colors
         monday: {
-          primary: '#FF3D57', // Monday red/coral
-          primaryHover: '#E62E49',
-          primaryLight: '#FFE5E9',
-          secondary: '#00CA72', // Success green
-          green: '#00CA72',
-          purple: '#7E3AF2',
-          blue: '#579BFC',
-          orange: '#FDAB3D',
-          yellow: '#FFCB00',
-          dark: '#1F2128', // Dark mode background
-          darkLight: '#292A31',
+          primary: '#0073ea',
+          primaryHover: '#0060c0',
+          primarySelected: '#0050a0',
+          primaryLight: '#cce5ff',
+          primaryUltraLight: '#e6f4ff',
+          secondary: '#00ca72',
+          green: '#00ca72',
+          greenHover: '#00a85d',
+          greenLight: '#ccf4e3',
+          purple: '#7e3af2',
+          blue: '#579bfc',
+          blueHover: '#4387e8',
+          blueLight: '#e1ecff',
+          orange: '#fdab3d',
+          yellow: '#ffcb00',
+          red: '#e2445c',
+          redHover: '#d83a52',
+          redLight: '#ffe5e9',
+          dark: '#181b34',
+          darkLight: '#1f2244',
+          darkTertiary: '#252847',
           text: '#323338',
           textLight: '#676879',
-          border: '#D0D4E4',
-          background: '#F6F7FB',
+          placeholder: '#9699a6',
+          disabled: '#c3c6d4',
+          border: '#e6e9ef',
+          borderMedium: '#d0d4e4',
+          borderStrong: '#b3b7c4',
+          background: '#f6f7fb',
+          backgroundHover: '#f5f6f8',
+          backgroundSelected: '#e9ecf5',
         },
         primary: {
           50: '#FFE5E9',
@@ -39,7 +55,8 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        sans: ['Figtree', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
+        mono: ['Roboto Mono', 'monospace'],
       },
       borderRadius: {
         'md': '8px',

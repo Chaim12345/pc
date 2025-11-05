@@ -14,9 +14,23 @@ import webhookRoutes from './webhooks';
 import notificationRoutes from './notifications';
 import usersRoutes from './users';
 import teamsRoutes from './teams';
+import workdocRoutes from './workdocs';
+import aiRoutes from './ai';
+import integrationsRoutes from './integrations';
+import formsRoutes from './forms';
+import guestAccessRoutes from './guestAccess';
+import dependenciesRoutes from './dependencies';
+import recurringTasksRoutes from './recurringTasks';
+import activityLogsRoutes from './activityLogs';
+import importExportRoutes from './importExport';
+import twoFactorAuthRoutes from './twoFactorAuth';
+import reactionsRoutes from './reactions';
+import templatesRoutes from './templates';
+import boardPermissionsRoutes from './boardPermissions';
 
 export function setupRoutes(app: Express) {
   app.use('/api/auth', authRoutes);
+  app.use('/api/auth/2fa', twoFactorAuthRoutes);
   app.use('/api/organizations', organizationRoutes);
   app.use('/api/boards', boardRoutes);
   app.use('/api/groups', groupRoutes);
@@ -31,5 +45,17 @@ export function setupRoutes(app: Express) {
   app.use('/api/notifications', notificationRoutes);
   app.use('/api/users', usersRoutes);
   app.use('/api/teams', teamsRoutes);
+  app.use('/api/workdocs', workdocRoutes);
+  app.use('/api/ai', aiRoutes);
+  app.use('/api/integrations', integrationsRoutes);
+  app.use('/api/forms', formsRoutes);
+  app.use('/api/guest-access', guestAccessRoutes);
+  app.use('/api/dependencies', dependenciesRoutes);
+  app.use('/api/recurring-tasks', recurringTasksRoutes);
+  app.use('/api/activity-logs', activityLogsRoutes);
+  app.use('/api', importExportRoutes);
+  app.use('/api/reactions', reactionsRoutes);
+  app.use('/api/templates', templatesRoutes);
+  app.use('/api/board-permissions', boardPermissionsRoutes);
 }
 

@@ -12,6 +12,7 @@ router.post('/', teamsController.createTeam);
 router.put('/:id', teamsController.updateTeam);
 router.delete('/:id', teamsController.deleteTeam);
 router.post('/:id/members', teamsController.addMember);
+router.put('/:id/members/:memberId', teamsController.updateMemberRole);
 router.delete('/:id/members/:memberId', teamsController.removeMember);
 router.post('/:id/boards', teamsController.addBoard);
 router.delete('/:id/boards/:boardId', teamsController.removeBoard);

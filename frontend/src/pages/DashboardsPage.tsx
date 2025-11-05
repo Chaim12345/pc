@@ -191,8 +191,7 @@ export default function DashboardsPage() {
           <div className="bg-white dark:bg-monday-darkLight rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
             <DashboardBuilder
               organizationId={orgId}
-              onClose={() => setShowCreateModal(false)}
-              onSave={() => {
+              onClose={() => {
                 setShowCreateModal(false)
                 queryClient.invalidateQueries({ queryKey: ['dashboards'] })
                 showToast('Dashboard created successfully', 'success')

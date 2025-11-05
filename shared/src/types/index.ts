@@ -4,6 +4,8 @@ export interface User {
   email: string;
   name: string;
   avatar?: string;
+  isTwoFactorEnabled?: boolean;
+  organizationId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -58,11 +60,13 @@ export interface Item {
   groupId: string;
   name: string;
   position: number;
+  parentId?: string;
   createdAt: Date;
   updatedAt: Date;
   columnValues?: ColumnValue[];
   comments?: Comment[];
   attachments?: Attachment[];
+  subitems?: Item[];
 }
 
 // Column types
@@ -81,7 +85,8 @@ export enum ColumnType {
   EMAIL = 'EMAIL',
   PHONE = 'PHONE',
   LOCATION = 'LOCATION',
-  TAGS = 'TAGS'
+  TAGS = 'TAGS',
+  PRIORITY = 'PRIORITY'
 }
 
 export interface Column {
@@ -219,6 +224,7 @@ export interface TimeEntry {
   endTime?: Date;
   duration?: number; // in seconds
   description?: string;
+  user?: User;
 }
 
 // Notification types
@@ -239,6 +245,18 @@ export interface ApiResponse<T> {
   data?: T;
   error?: string;
   message?: string;
+}
+
+// Workdoc types
+export interface Workdoc {
+  id: string;
+  title: string;
+  content: string;
+  organizationId: string;
+  createdById: string;
+  createdAt: Date;
+  updatedAt: Date;
+  creator?: User;
 }
 
 // Socket event types

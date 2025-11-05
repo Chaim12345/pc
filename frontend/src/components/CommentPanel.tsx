@@ -6,6 +6,8 @@ import { useAuth } from '../contexts/AuthContext'
 import { useSocket } from '../contexts/SocketContext'
 import { format } from 'date-fns'
 import ConfirmationDialog from './ConfirmationDialog'
+import MentionTextarea from './MentionTextarea'
+import ReactionBar from './ReactionBar'
 
 interface CommentPanelProps {
   itemId: string
@@ -219,6 +221,11 @@ export default function CommentPanel({ itemId, boardId, isOpen, onClose, embedde
                 </>
               )}
             </div>
+            {!isEditing && (
+              <div className="mt-2">
+                <ReactionBar commentId={comment.id} />
+              </div>
+            )}
             {replyingTo === comment.id && (
               <div className="mt-3 ml-4">
                 <textarea
@@ -271,21 +278,24 @@ export default function CommentPanel({ itemId, boardId, isOpen, onClose, embedde
           <div>{comments.map((comment) => <CommentItem key={comment.id} comment={comment} />)}</div>
         )}
       </div>
-      <div className="p-4 border-t">
+      <div className="p-4 border-t border-monday-border dark:border-gray-700">
         <form onSubmit={handleSubmit}>
-          <textarea
-            ref={textareaRef}
+          <MentionTextarea
             value={newComment}
-            onChange={(e) => setNewComment(e.target.value)}
+            onChange={setNewComment}
             placeholder="Add a comment... Use @username to mention someone"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-            rows={3}
+            className="w-full px-3 py-2 border border-monday-border dark:border-gray-700 rounded-lg bg-white dark:bg-monday-dark text-monday-text dark:text-white focus:outline-none focus:ring-2 focus:ring-monday-primary focus:border-transparent resize-none"
+            boardId={boardId}
+            onMention={(userId) => {
+              // Optionally notify the mentioned user
+              console.log('User mentioned:', userId)
+            }}
           />
           <div className="flex justify-end mt-2">
             <button
               type="submit"
               disabled={!newComment.trim() || createCommentMutation.isPending}
-              className="px-4 py-2 bg-primary-600 text-white rounded hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 bg-monday-primary text-white rounded-lg font-medium hover:bg-monday-primaryHover disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
               {createCommentMutation.isPending ? 'Posting...' : 'Post Comment'}
             </button>

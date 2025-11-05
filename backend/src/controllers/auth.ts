@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt, { SignOptions, Secret } from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
+import { authenticator } from 'otplib';
 
 const prisma = new PrismaClient();
 
@@ -89,7 +90,6 @@ export const authController = {
       });
     }
   },
-
   async login(req: Request, res: Response) {
     try {
       const { email, password } = req.body;
@@ -101,29 +101,37 @@ export const authController = {
         });
       }
 
-      // Find user
       const user = await prisma.user.findUnique({
         where: { email }
       });
 
-      if (!user) {
+      if (!user || !(await bcrypt.compare(password, user.password))) {
         return res.status(401).json({
           success: false,
           error: 'Invalid credentials'
         });
       }
+      
+      if (user.isTwoFactorEnabled) {
+        // User has 2FA enabled, so we need to prompt for a token
+        // Issue a temporary token that's only valid for 2FA verification
+        const jwtSecret: Secret = process.env.JWT_SECRET ?? 'secret';
+        const tempToken = jwt.sign(
+          { userId: user.id, twoFactorRequired: true },
+          jwtSecret,
+          { expiresIn: '5m' } // Short expiry for the temp token
+        );
 
-      // Check password
-      const isValid = await bcrypt.compare(password, user.password);
-
-      if (!isValid) {
-        return res.status(401).json({
-          success: false,
-          error: 'Invalid credentials'
+        return res.json({
+          success: true,
+          data: {
+            twoFactorRequired: true,
+            tempToken: tempToken,
+          }
         });
       }
 
-      // Generate JWT
+      // 2FA is not enabled, proceed with normal login
       const jwtSecret: Secret = process.env.JWT_SECRET ?? 'secret';
       const jwtExpiresIn = (process.env.JWT_EXPIRES_IN ?? '7d') as SignOptions['expiresIn'];
       const signOptions: SignOptions = { expiresIn: jwtExpiresIn };
@@ -143,7 +151,8 @@ export const authController = {
             name: user.name,
             avatar: user.avatar,
             createdAt: user.createdAt,
-            updatedAt: user.updatedAt
+            updatedAt: user.updatedAt,
+            isTwoFactorEnabled: user.isTwoFactorEnabled,
           },
           token
         }
@@ -154,6 +163,66 @@ export const authController = {
         success: false,
         error: error.message || 'Internal server error'
       });
+    }
+  },
+
+  async verifyTwoFactor(req: Request, res: Response) {
+    try {
+      const { tempToken, token } = req.body;
+
+      if (!tempToken || !token) {
+        return res.status(400).json({ success: false, error: 'Temporary token and 2FA token are required.' });
+      }
+
+      const jwtSecret: Secret = process.env.JWT_SECRET ?? 'secret';
+      let decoded: any;
+
+      try {
+        decoded = jwt.verify(tempToken, jwtSecret);
+      } catch (error) {
+        return res.status(401).json({ success: false, error: 'Invalid or expired temporary token.' });
+      }
+
+      if (!decoded.userId || !decoded.twoFactorRequired) {
+        return res.status(401).json({ success: false, error: 'Invalid temporary token.' });
+      }
+
+      const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
+
+      if (!user || !user.isTwoFactorEnabled || !user.twoFactorSecret) {
+        return res.status(400).json({ success: false, error: '2FA is not enabled for this user.' });
+      }
+
+      const isValid = authenticator.verify({ token, secret: user.twoFactorSecret });
+
+      if (!isValid) {
+        return res.status(401).json({ success: false, error: 'Invalid 2FA token.' });
+      }
+
+      // 2FA token is valid, issue a full-access JWT
+      const jwtExpiresIn = (process.env.JWT_EXPIRES_IN ?? '7d') as SignOptions['expiresIn'];
+      const signOptions: SignOptions = { expiresIn: jwtExpiresIn };
+      const fullAccessToken = jwt.sign({ userId: user.id }, jwtSecret, signOptions);
+
+      res.json({
+        success: true,
+        data: {
+           user: {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            avatar: user.avatar,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt,
+            isTwoFactorEnabled: user.isTwoFactorEnabled,
+          },
+          token: fullAccessToken,
+        },
+      });
+
+    } catch (error) {
+      console.error('2FA verification error:', error);
+      res.status(500).json({ success: false, error: 'Failed to verify 2FA token.' });
     }
   },
 
@@ -176,6 +245,7 @@ export const authController = {
           email: true,
           name: true,
           avatar: true,
+          isTwoFactorEnabled: true,
           createdAt: true,
           updatedAt: true
         }

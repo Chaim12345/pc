@@ -1,15 +1,20 @@
 import React, { useState } from 'react'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useToast } from '../../contexts/ToastContext'
+import { useAuth } from '../../contexts/AuthContext'
 import { api } from '../../services/api'
+import TwoFactorAuthSetup from '../../components/TwoFactorAuthSetup'
 
 export default function AccountSettings() {
   const { showToast } = useToast()
+  const { user } = useAuth()
+  const queryClient = useQueryClient()
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showCurrentPassword, setShowCurrentPassword] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
+  const [show2FASetup, setShow2FASetup] = useState(false)
 
   const changePasswordMutation = useMutation({
     mutationFn: async (data: { currentPassword: string; newPassword: string }) => {
@@ -26,6 +31,26 @@ export default function AccountSettings() {
       showToast(error.response?.data?.error || 'Failed to change password', 'error')
     },
   })
+
+  const disable2FAMutation = useMutation({
+    mutationFn: async () => {
+      const response = await api.post('/auth/2fa/disable')
+      return response.data
+    },
+    onSuccess: () => {
+      showToast('2FA has been disabled', 'success')
+      queryClient.invalidateQueries({ queryKey: ['user'] })
+    },
+    onError: (error: any) => {
+      showToast(error.response?.data?.error || 'Failed to disable 2FA', 'error')
+    },
+  })
+
+  const handleDisable2FA = () => {
+    if (window.confirm('Are you sure you want to disable 2FA? This will reduce your account security.')) {
+      disable2FAMutation.mutate()
+    }
+  }
 
   const handleChangePassword = (e: React.FormEvent) => {
     e.preventDefault()
@@ -134,16 +159,46 @@ export default function AccountSettings() {
         </div>
       </form>
 
-      {/* Two-Factor Authentication (Placeholder) */}
+      {/* Two-Factor Authentication */}
       <div className="bg-white dark:bg-monday-darkLight rounded-lg shadow-md border border-monday-border dark:border-gray-700 p-6 space-y-4">
-        <h3 className="text-lg font-semibold text-monday-text dark:text-white">Two-Factor Authentication</h3>
-        <p className="text-sm text-monday-textLight dark:text-gray-400">
-          Add an extra layer of security to your account by enabling two-factor authentication
-        </p>
-        <button className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-monday-text dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
-          Enable 2FA (Coming Soon)
-        </button>
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-monday-text dark:text-white">Two-Factor Authentication</h3>
+            <p className="text-sm text-monday-textLight dark:text-gray-400 mt-1">
+              Add an extra layer of security to your account by enabling two-factor authentication
+            </p>
+          </div>
+        </div>
+        
+        {user?.isTwoFactorEnabled ? (
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2 text-green-600 dark:text-green-400">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span className="font-medium">2FA is currently enabled</span>
+            </div>
+            <button
+              onClick={handleDisable2FA}
+              disabled={disable2FAMutation.isPending}
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 font-medium"
+            >
+              {disable2FAMutation.isPending ? 'Disabling...' : 'Disable 2FA'}
+            </button>
+          </div>
+        ) : (
+          <div>
+            <button
+              onClick={() => setShow2FASetup(true)}
+              className="px-4 py-2 bg-monday-primary hover:bg-monday-primaryHover text-white rounded-lg transition-colors font-medium"
+            >
+              Enable 2FA
+            </button>
+          </div>
+        )}
       </div>
+
+      {show2FASetup && <TwoFactorAuthSetup onClose={() => setShow2FASetup(false)} />}
 
       {/* Danger Zone */}
       <div className="bg-red-50 dark:bg-red-900/20 rounded-lg shadow-md border-2 border-red-200 dark:border-red-800 p-6 space-y-4">

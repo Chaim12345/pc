@@ -1,6 +1,24 @@
+@import url('https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap');
+@import './styles/vibe-design-system.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Tippy.js slash commands theme */
+.tippy-box[data-theme~='slash-commands'] {
+  background-color: transparent;
+  box-shadow: none;
+  padding: 0;
+}
+
+.tippy-box[data-theme~='slash-commands'] .tippy-content {
+  padding: 0;
+}
+
+.tippy-box[data-theme~='slash-commands'] .tippy-arrow {
+  display: none;
+}
 
 /* Custom Scrollbar */
 @layer utilities {

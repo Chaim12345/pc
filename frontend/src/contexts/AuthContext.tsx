@@ -5,7 +5,8 @@ import { api } from '../services/api'
 interface AuthContextType {
   user: User | null
   token: string | null
-  login: (email: string, password: string) => Promise<void>
+  login: (email: string, password: string) => Promise<{ twoFactorRequired?: boolean; tempToken?: string } | void>
+  verifyTwoFactor: (tempToken: string, token: string) => Promise<void>
   register: (email: string, password: string, name: string) => Promise<void>
   logout: () => void
   loading: boolean
@@ -43,11 +44,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     const response = await api.post('/auth/login', { email, password })
-    const { user, token } = response.data.data
+    const data = response.data.data
+    
+    // Check if 2FA is required
+    if (data.twoFactorRequired) {
+      return { twoFactorRequired: true, tempToken: data.tempToken }
+    }
+    
+    // Normal login flow
+    const { user, token } = data
     setUser(user)
     setToken(token)
     localStorage.setItem('token', token)
-    // No need to set header here - the interceptor handles it
+  }
+
+  const verifyTwoFactor = async (tempToken: string, token: string) => {
+    const response = await api.post('/auth/verify-2fa', { tempToken, token })
+    const { user, token: fullToken } = response.data.data
+    setUser(user)
+    setToken(fullToken)
+    localStorage.setItem('token', fullToken)
   }
 
   const register = async (email: string, password: string, name: string) => {
@@ -67,7 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, login, register, logout, loading }}>
+    <AuthContext.Provider value={{ user, token, login, verifyTwoFactor, register, logout, loading }}>
       {children}
     </AuthContext.Provider>
   )

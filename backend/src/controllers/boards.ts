@@ -57,6 +57,7 @@ export const boardController = {
           groups: {
             include: {
               items: {
+                where: { parentId: null },
                 include: {
                   columnValues: {
                     include: {
@@ -75,6 +76,16 @@ export const boardController = {
                       }
                     },
                     orderBy: { createdAt: 'asc' }
+                  },
+                  subitems: {
+                    include: {
+                      columnValues: {
+                        include: {
+                          column: true
+                        }
+                      }
+                    },
+                    orderBy: { position: 'asc' }
                   }
                 },
                 orderBy: { position: 'asc' }

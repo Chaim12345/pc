@@ -5,6 +5,8 @@ import helmet from 'helmet';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import dotenv from 'dotenv';
+import cron from 'node-cron';
+import axios from 'axios';
 import { setupSocket } from './socket';
 import { setupRoutes } from './routes';
 import { apiLimiter, sanitizeInput } from './middleware/security';
@@ -68,6 +70,19 @@ httpServer.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
   console.log(`   Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`   CORS origin: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
+  
+  // Start recurring tasks cron job (runs every hour at minute 0)
+  cron.schedule('0 * * * *', async () => {
+    try {
+      console.log('⏰ Running recurring tasks scheduler...');
+      const response = await axios.post(`http://localhost:${PORT}/api/recurring-tasks/run`);
+      console.log(`✓ Recurring tasks executed: ${response.data?.created || 0} items created`);
+    } catch (error: any) {
+      console.error('✗ Recurring tasks scheduler error:', error.message);
+    }
+  });
+  
+  console.log('⏰ Recurring tasks scheduler enabled (runs every hour)');
 });
 
 // Handle unhandled promise rejections

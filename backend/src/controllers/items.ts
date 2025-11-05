@@ -12,7 +12,7 @@ export const itemController = {
       const { boardId } = req.params;
 
       const items = await prisma.item.findMany({
-        where: { boardId },
+        where: { boardId, parentId: null },
         include: {
           columnValues: {
             include: {
@@ -27,6 +27,15 @@ export const itemController = {
                   name: true,
                   email: true,
                   avatar: true
+                }
+              }
+            }
+          },
+          subitems: {
+            include: {
+              columnValues: {
+                include: {
+                  column: true
                 }
               }
             }
@@ -82,13 +91,13 @@ export const itemController = {
 
   async create(req: AuthRequest, res: Response) {
     try {
-      const { boardId, groupId, name, position, columnValues } = req.body;
+      const { boardId, groupId, name, position, columnValues, parentId } = req.body;
 
       // Get max position if not provided
       let itemPosition = position;
       if (itemPosition === undefined) {
         const maxItem = await prisma.item.findFirst({
-          where: { groupId },
+          where: { groupId, parentId },
           orderBy: { position: 'desc' }
         });
         itemPosition = maxItem ? maxItem.position + 1 : 0;
@@ -100,6 +109,7 @@ export const itemController = {
           groupId,
           name,
           position: itemPosition,
+          parentId,
           columnValues: columnValues ? {
             create: columnValues.map((cv: any) => ({
               columnId: cv.columnId,

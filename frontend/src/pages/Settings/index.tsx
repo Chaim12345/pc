@@ -6,8 +6,9 @@ import ProfileSettings from './ProfileSettings'
 import AccountSettings from './AccountSettings'
 import NotificationSettings from './NotificationSettings'
 import PreferencesSettings from './PreferencesSettings'
+import IntegrationsSettings from './IntegrationsSettings'
 
-type Tab = 'profile' | 'account' | 'notifications' | 'preferences'
+type Tab = 'profile' | 'account' | 'notifications' | 'preferences' | 'integrations'
 
 export default function Settings() {
   const [activeTab, setActiveTab] = useState<Tab>('profile')
@@ -20,6 +21,7 @@ export default function Settings() {
     { key: 'account' as Tab, label: 'Account', icon: '🔐' },
     { key: 'notifications' as Tab, label: 'Notifications', icon: '🔔' },
     { key: 'preferences' as Tab, label: 'Preferences', icon: '⚙️' },
+    { key: 'integrations' as Tab, label: 'Integrations', icon: '🔗' },
   ]
 
   return (
@@ -93,6 +95,7 @@ export default function Settings() {
             {activeTab === 'account' && <AccountSettings />}
             {activeTab === 'notifications' && <NotificationSettings />}
             {activeTab === 'preferences' && <PreferencesSettings />}
+            {activeTab === 'integrations' && <IntegrationsSettings />}
           </div>
         </div>
       </div>

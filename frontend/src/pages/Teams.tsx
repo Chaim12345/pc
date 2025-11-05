@@ -89,6 +89,7 @@ export default function Teams() {
               {teams.map((team: any) => (
                 <div
                   key={team.id}
+                  onClick={() => navigate(`/teams/${team.id}`)}
                   className="bg-white dark:bg-monday-darkLight rounded-xl shadow-monday hover:shadow-monday-hover p-6 transition-all transform hover:scale-[1.02] cursor-pointer"
                 >
                   <div className="flex items-start justify-between mb-4">

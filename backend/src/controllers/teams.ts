@@ -188,6 +188,29 @@ export const teamsController = {
     }
   },
 
+  // Update member role
+  async updateMemberRole(req: AuthRequest, res: Response) {
+    try {
+      const { memberId } = req.params;
+      const { role } = req.body;
+
+      if (!role || !['OWNER', 'MEMBER'].includes(role)) {
+        return res.status(400).json({ success: false, error: 'Invalid role specified' });
+      }
+
+      const updatedMember = await prisma.teamMember.update({
+        where: { id: memberId },
+        data: { role },
+        include: { user: { select: { id: true, name: true, email: true, avatar: true } } },
+      });
+
+      res.json({ success: true, data: updatedMember });
+    } catch (error) {
+      console.error('Update member role error:', error);
+      res.status(500).json({ success: false, error: 'Failed to update member role' });
+    }
+  },
+
   // Add board to team
   async addBoard(req: AuthRequest, res: Response) {
     try {

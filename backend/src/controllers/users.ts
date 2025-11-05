@@ -275,5 +275,46 @@ export const usersController = {
       res.status(500).json({ success: false, error: 'Failed to fetch user' });
     }
   },
+
+  // Get all users in the organization
+  async getUsersInOrganization(req: AuthRequest, res: Response) {
+    try {
+      const userId = req.userId;
+
+      // Get user's organization to only search within same org
+      const orgMembership = await prisma.organizationMember.findFirst({
+        where: { userId },
+      });
+
+      if (!orgMembership) {
+        return res.json({ success: true, data: [] });
+      }
+
+      // Find all users in the same organization
+      const users = await prisma.user.findMany({
+        where: {
+          organizationMemberships: {
+            some: {
+              organizationId: orgMembership.organizationId,
+            },
+          },
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          avatar: true,
+        },
+        orderBy: {
+          name: 'asc'
+        }
+      });
+
+      res.json({ success: true, data: users });
+    } catch (error) {
+      console.error('Get users in organization error:', error);
+      res.status(500).json({ success: false, error: 'Failed to fetch users' });
+    }
+  }
 };
 

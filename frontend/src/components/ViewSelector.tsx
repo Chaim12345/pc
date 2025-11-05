@@ -1,5 +1,7 @@
 import { useState, Suspense, lazy } from 'react'
 import { Board } from '@monday-clone/shared'
+import { FilterRule } from './FilterModal'
+import { SortRule } from './SortModal'
 
 // Lazy load views for better performance
 const TableView = lazy(() => import('../views/TableView'))
@@ -10,9 +12,11 @@ const TimelineView = lazy(() => import('../views/TimelineView'))
 
 interface ViewSelectorProps {
   board: Board
+  filterRules?: FilterRule[]
+  sortRules?: SortRule[]
 }
 
-export default function ViewSelector({ board }: ViewSelectorProps) {
+export default function ViewSelector({ board, filterRules = [], sortRules = [] }: ViewSelectorProps) {
   const [view, setView] = useState<'table' | 'kanban' | 'calendar' | 'gantt' | 'timeline'>('table')
 
   const viewButtonClass = (isActive: boolean) => `
@@ -63,27 +67,27 @@ export default function ViewSelector({ board }: ViewSelectorProps) {
       <div className="flex-1 min-h-0 overflow-hidden">
         {view === 'table' && (
           <Suspense fallback={<div className="flex items-center justify-center h-64">Loading Table View...</div>}>
-            <TableView board={board} />
+            <TableView board={board} filterRules={filterRules} sortRules={sortRules} />
           </Suspense>
         )}
         {view === 'kanban' && (
           <Suspense fallback={<div className="flex items-center justify-center h-64">Loading Kanban View...</div>}>
-            <KanbanView board={board} />
+            <KanbanView board={board} filterRules={filterRules} sortRules={sortRules} />
           </Suspense>
         )}
         {view === 'calendar' && (
           <Suspense fallback={<div className="flex items-center justify-center h-64">Loading Calendar View...</div>}>
-            <CalendarView board={board} />
+            <CalendarView board={board} filterRules={filterRules} sortRules={sortRules} />
           </Suspense>
         )}
         {view === 'gantt' && (
           <Suspense fallback={<div className="flex items-center justify-center h-64">Loading Gantt View...</div>}>
-            <GanttView board={board} />
+            <GanttView board={board} filterRules={filterRules} sortRules={sortRules} />
           </Suspense>
         )}
         {view === 'timeline' && (
           <Suspense fallback={<div className="flex items-center justify-center h-64">Loading Timeline View...</div>}>
-            <TimelineView board={board} />
+            <TimelineView board={board} filterRules={filterRules} sortRules={sortRules} />
           </Suspense>
         )}
       </div>

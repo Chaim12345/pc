@@ -7,6 +7,7 @@ const router = Router();
 // All user routes require authentication
 router.use(authenticate);
 
+router.get('/', usersController.getUsersInOrganization);
 router.get('/me/profile', usersController.getProfile);
 router.put('/me/profile', usersController.updateProfile);
 router.put('/me/password', usersController.changePassword);

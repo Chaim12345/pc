@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Board, Item, Column, Group, User } from '@monday-clone/shared'
+import { useMutation, useQueryClient, UseMutationResult } from '@tanstack/react-query'
+import { Board, Item, Column, Group, User, ColumnType } from '@monday-clone/shared'
 import { api } from '../services/api'
 import { useSocket } from '../contexts/SocketContext'
 import { SocketEvent } from '@monday-clone/shared'
@@ -9,6 +9,8 @@ import StatusDropdown, { StatusOption } from '../components/StatusDropdown'
 import PriorityDropdown from '../components/PriorityDropdown'
 import DatePickerColumn from '../components/DatePickerColumn'
 import PersonSelector from '../components/PersonSelector'
+import FileUploadColumn from '../components/FileUploadColumn'
+import ItemRow from '../components/ItemRow';
 
 interface TableViewProps {
   board: Board
@@ -54,6 +56,21 @@ export default function TableView({ board }: TableViewProps) {
         boardId: board.id,
         groupId,
         name,
+      })
+      return response.data.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['board', board.id] })
+    },
+  })
+
+  const createSubItemMutation = useMutation({
+    mutationFn: async ({ parentId, groupId, name }: { parentId: string; groupId: string; name: string }) => {
+      const response = await api.post('/items', {
+        boardId: board.id,
+        groupId,
+        name,
+        parentId,
       })
       return response.data.data
     },
@@ -156,7 +173,7 @@ export default function TableView({ board }: TableViewProps) {
       )
     }
 
-    if (column.type === 'PERSON' || column.title.toLowerCase().includes('person') || column.title.toLowerCase().includes('assign')) {
+    if (column.type === ColumnType.PEOPLE || column.title.toLowerCase().includes('person') || column.title.toLowerCase().includes('assign')) {
       return (
         <div className="px-3 py-2">
           <PersonSelector
@@ -171,6 +188,16 @@ export default function TableView({ board }: TableViewProps) {
             boardId={board.id}
           />
         </div>
+      )
+    }
+
+    if (column.type === 'FILES') {
+      return (
+        <FileUploadColumn
+          itemId={item.id}
+          boardId={board.id}
+          value={value}
+        />
       )
     }
 
@@ -354,88 +381,22 @@ export default function TableView({ board }: TableViewProps) {
                 </tr>
                 
                 {/* Group Items */}
-                {group.items?.map((item, itemIndex) => (
-                  <tr 
-                    key={item.id} 
-                    className="border-b border-monday-border/30 dark:border-gray-700/50 hover:bg-monday-primaryLight/5 dark:hover:bg-gray-800/30 transition-all duration-150 group/row"
-                  >
-                    <td className="px-6 py-3 sticky left-0 bg-white dark:bg-monday-darkLight z-10 border-r border-monday-border/20 dark:border-gray-700/30 group-hover/row:bg-monday-primaryLight/5 dark:group-hover/row:bg-gray-800/30 transition-colors">
-                      <div className="flex items-center space-x-2 group/item">
-                        <div className="flex-shrink-0 w-6 h-6 rounded bg-gradient-to-br from-monday-blue/20 to-monday-purple/20 dark:from-monday-blue/10 dark:to-monday-purple/10 flex items-center justify-center text-xs font-bold text-monday-blue dark:text-monday-primary">
-                          {itemIndex + 1}
-                        </div>
-                        <div
-                          onClick={() => {
-                            setEditingCell({ itemId: item.id, columnId: 'name' })
-                            setEditValue(item.name)
-                          }}
-                          className="flex-1 font-medium text-monday-text dark:text-white cursor-pointer hover:bg-monday-primaryLight/20 dark:hover:bg-gray-700 px-3 py-2 rounded-lg transition-colors"
-                        >
-                          {editingCell?.itemId === item.id && editingCell?.columnId === 'name' ? (
-                            <input
-                              type="text"
-                              value={editValue ?? item.name}
-                              onChange={(e) => setEditValue(e.target.value)}
-                              onBlur={() => {
-                                updateItemMutation.mutate({
-                                  itemId: item.id,
-                                  updates: { name: editValue },
-                                })
-                                setEditingCell(null)
-                                setEditValue(null)
-                              }}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  updateItemMutation.mutate({
-                                    itemId: item.id,
-                                    updates: { name: editValue },
-                                  })
-                                  setEditingCell(null)
-                                  setEditValue(null)
-                                }
-                                if (e.key === 'Escape') {
-                                  setEditingCell(null)
-                                  setEditValue(null)
-                                }
-                              }}
-                              className="w-full px-3 py-2 text-base border-2 border-monday-primary rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-monday-primary/20 text-monday-text dark:bg-monday-dark dark:text-white"
-                              autoFocus
-                              onClick={(e) => e.stopPropagation()}
-                              style={{ fontSize: '14px' }}
-                            />
-                          ) : (
-                            <span
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                setSelectedItemId(item.id)
-                              }}
-                              className="hover:text-monday-primary dark:hover:text-monday-primary transition-colors cursor-pointer"
-                            >
-                              {item.name}
-                            </span>
-                          )}
-                        </div>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setSelectedItemId(item.id)
-                          }}
-                          className="opacity-0 group-hover/item:opacity-100 p-1.5 text-monday-textLight dark:text-gray-400 hover:text-monday-primary dark:hover:text-monday-primary hover:bg-monday-background dark:hover:bg-gray-700 rounded transition-all hover:scale-110"
-                          title="View item details"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                          </svg>
-                        </button>
-                      </div>
-                    </td>
-                    {board.columns?.map((column) => (
-                      <td key={column.id} className="py-3">
-                        {renderCell(item, column)}
-                      </td>
-                    ))}
-                  </tr>
+                {group.items?.filter(item => !item.parentId).map((item, itemIndex) => (
+                  <ItemRow
+                    key={item.id}
+                    item={item}
+                    columns={board.columns || []}
+                    level={0}
+                    renderCell={renderCell}
+                    itemIndex={itemIndex}
+                    editingCell={editingCell}
+                    setEditingCell={setEditingCell}
+                    editValue={editValue}
+                    setEditValue={setEditValue}
+                    updateItemMutation={updateItemMutation}
+                    setSelectedItemId={setSelectedItemId}
+                    createSubItemMutation={createSubItemMutation}
+                  />
                 ))}
                 
                 {/* Add Item Row */}

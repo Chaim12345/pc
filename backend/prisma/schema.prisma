@@ -11,13 +11,16 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  name      String
-  avatar    String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                      String    @id @default(cuid())
+  email                   String    @unique
+  password                String
+  name                    String
+  avatar                  String?
+  isTwoFactorEnabled      Boolean   @default(false)
+  twoFactorSecret         String?
+  twoFactorRecoveryCodes  String[]
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
 
   // Relations
   organizationMemberships OrganizationMember[]
@@ -27,6 +30,8 @@ model User {
   timeEntries             TimeEntry[]
   notifications           Notification[]
   teamMemberships         TeamMember[]
+  createdWorkdocs         Workdoc[]            @relation("WorkdocCreator")
+  activityLogs            ActivityLog[]
 
   @@map("users")
 }
@@ -38,10 +43,14 @@ model Organization {
   updatedAt DateTime @updatedAt
 
   // Relations
-  members    OrganizationMember[]
-  boards     Board[]
-  dashboards Dashboard[]
-  teams      Team[]
+  members      OrganizationMember[]
+  boards       Board[]
+  dashboards   Dashboard[]
+  teams        Team[]
+  workdocs     Workdoc[]
+  whiteboards  Whiteboard[]
+  documents    Document[]
+  folders      Folder[]
 
   @@map("organizations")
 }
@@ -72,18 +81,42 @@ model Board {
   updatedAt      DateTime @updatedAt
 
   // Relations
-  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  creator        User             @relation("BoardCreator", fields: [createdById], references: [id])
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  creator        User              @relation("BoardCreator", fields: [createdById], references: [id])
   groups         Group[]
   columns        Column[]
   items          Item[]
   automations    Automation[]
   teams          BoardTeam[]
+  guestAccesses  GuestAccess[]
+  recurringTasks RecurringTask[]
+  permissions    BoardPermission[]
 
   @@index([organizationId])
   @@index([createdById])
   @@index([updatedAt])
   @@map("boards")
+}
+
+model BoardPermission {
+  id        String   @id @default(cuid())
+  boardId   String
+  userId    String?
+  teamId    String?
+  role      String   // OWNER, ADMIN, EDITOR, COMMENTER, VIEWER
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  board Board  @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  team  Team?  @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([boardId, userId])
+  @@unique([boardId, teamId])
+  @@index([boardId])
+  @@index([userId])
+  @@index([teamId])
+  @@map("board_permissions")
 }
 
 model Group {
@@ -119,10 +152,17 @@ model Item {
   comments      Comment[]     @relation("ItemComments")
   attachments   Attachment[]
   timeEntries   TimeEntry[]
+  reactions     Reaction[]
+  parentId      String?
+  parent        Item?         @relation("Subitems", fields: [parentId], references: [id], onDelete: Cascade)
+  subitems      Item[]        @relation("Subitems")
+  dependencies  ItemDependency[] @relation("ItemDependencies")
+  dependedOnBy  ItemDependency[] @relation("DependsOnItems")
 
   @@index([boardId])
   @@index([groupId])
   @@index([position])
+  @@index([parentId])
   @@index([updatedAt])
   @@map("items")
 }
@@ -175,16 +215,37 @@ model Comment {
   updatedAt DateTime @updatedAt
 
   // Relations
-  item     Item     @relation("ItemComments", fields: [itemId], references: [id], onDelete: Cascade)
-  parent   Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
-  replies  Comment[] @relation("CommentReplies")
-  user     User      @relation(fields: [userId], references: [id])
+  item      Item       @relation("ItemComments", fields: [itemId], references: [id], onDelete: Cascade)
+  parent    Comment?   @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   Comment[]  @relation("CommentReplies")
+  user      User       @relation(fields: [userId], references: [id])
+  reactions Reaction[]
 
   @@index([itemId])
   @@index([userId])
   @@index([parentId])
   @@index([createdAt])
   @@map("comments")
+}
+
+model Reaction {
+  id        String   @id @default(cuid())
+  commentId String?
+  itemId    String?
+  userId    String
+  emoji     String   // 👍, ❤️, 😊, etc.
+  createdAt DateTime @default(now())
+
+  // Relations
+  comment Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  item    Item?    @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@unique([commentId, userId, emoji])
+  @@unique([itemId, userId, emoji])
+  @@index([commentId])
+  @@index([itemId])
+  @@index([userId])
+  @@map("reactions")
 }
 
 model Attachment {
@@ -304,9 +365,10 @@ model Team {
   updatedAt      DateTime @updatedAt
 
   // Relations
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   members        TeamMember[]
   boards         BoardTeam[]
+  permissions    BoardPermission[]
 
   @@index([organizationId])
   @@map("teams")
@@ -344,5 +406,247 @@ model BoardTeam {
   @@index([boardId])
   @@index([teamId])
   @@map("board_teams")
+}
+
+model Workdoc {
+  id             String   @id @default(cuid())
+  title          String
+  content        String   @db.Text
+  organizationId String
+  createdById    String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  creator      User         @relation("WorkdocCreator", fields: [createdById], references: [id])
+
+  @@index([organizationId])
+  @@index([createdById])
+  @@index([updatedAt])
+  @@map("workdocs")
+}
+
+model IntegrationConfig {
+  id             String   @id @default(cuid())
+  boardId        String?
+  organizationId String
+  type           String   // 'slack', 'teams', 'zapier', etc.
+  webhookUrl     String
+  enabled        Boolean  @default(true)
+  events         String[] @default([]) // Events to trigger notifications
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([boardId])
+  @@index([enabled])
+  @@index([type])
+  @@map("integration_configs")
+}
+
+model Form {
+  id             String   @id @default(cuid())
+  boardId        String
+  groupId        String
+  name           String
+  description    String?
+  fields         Json     // Form field definitions
+  settings       Json     @default("{}")  // Form settings (thank you message, redirect, etc)
+  isPublic       Boolean  @default(true)
+  publicToken    String   @unique @default(cuid())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  submissions    FormSubmission[]
+
+  @@index([boardId])
+  @@index([groupId])
+  @@index([publicToken])
+  @@map("forms")
+}
+
+model FormSubmission {
+  id           String   @id @default(cuid())
+  formId       String
+  itemId       String?  // Created item ID
+  data         Json     // Submitted form data
+  submitterEmail String?
+  submitterName  String?
+  ipAddress    String?
+  createdAt    DateTime @default(now())
+
+  form         Form     @relation(fields: [formId], references: [id], onDelete: Cascade)
+
+  @@index([formId])
+  @@index([itemId])
+  @@index([createdAt])
+  @@map("form_submissions")
+}
+
+model GuestAccess {
+  id            String   @id @default(cuid())
+  boardId       String
+  token         String   @unique @default(cuid())
+  email         String?
+  name          String?
+  accessLevel   String   // 'view', 'comment', 'edit'
+  expiresAt     DateTime?
+  isActive      Boolean  @default(true)
+  createdById   String
+  createdAt     DateTime @default(now())
+  lastAccessedAt DateTime?
+  accessCount   Int      @default(0)
+
+  board         Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+
+  @@index([boardId])
+  @@index([token])
+  @@index([email])
+  @@index([isActive])
+  @@index([expiresAt])
+  @@map("guest_accesses")
+}
+
+model ItemDependency {
+  id            String   @id @default(cuid())
+  itemId        String   // The dependent item
+  dependsOnId   String   // The item it depends on
+  type          String   // 'blocks', 'blocked_by', 'related_to'
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  item          Item     @relation("ItemDependencies", fields: [itemId], references: [id], onDelete: Cascade)
+  dependsOn     Item     @relation("DependsOnItems", fields: [dependsOnId], references: [id], onDelete: Cascade)
+
+  @@unique([itemId, dependsOnId, type])
+  @@index([itemId])
+  @@index([dependsOnId])
+  @@index([type])
+  @@map("item_dependencies")
+}
+
+model RecurringTask {
+  id              String   @id @default(cuid())
+  boardId         String
+  groupId         String
+  itemTemplate    Json     // Template for creating items
+  frequency       String   // 'daily', 'weekly', 'monthly', 'custom'
+  interval        Int      @default(1) // Every N days/weeks/months
+  daysOfWeek      Int[]    @default([]) // For weekly: 0=Sun, 1=Mon, etc.
+  dayOfMonth      Int?     // For monthly: 1-31
+  startDate       DateTime
+  endDate         DateTime?
+  nextRunDate     DateTime
+  lastRunDate     DateTime?
+  isActive        Boolean  @default(true)
+  createdById     String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  board           Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+
+  @@index([boardId])
+  @@index([nextRunDate])
+  @@index([isActive])
+  @@map("recurring_tasks")
+}
+
+model ActivityLog {
+  id            String   @id @default(cuid())
+  userId        String?
+  organizationId String
+  boardId       String?
+  itemId        String?
+  action        String   // 'create', 'update', 'delete', 'view', 'export'
+  entityType    String   // 'board', 'item', 'column', 'user', 'group'
+  entityId      String?
+  changes       Json?    // Before/after data for updates
+  ipAddress     String?
+  userAgent     String?
+  metadata      Json?    // Additional context
+  createdAt     DateTime @default(now())
+
+  user          User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([organizationId])
+  @@index([boardId])
+  @@index([itemId])
+  @@index([action])
+  @@index([entityType])
+  @@index([createdAt])
+  @@map("activity_logs")
+}
+
+model Whiteboard {
+  id             String   @id @default(cuid())
+  name           String
+  content        Json     @default("{}")
+  organizationId String
+  createdById    String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([createdById])
+  @@map("whiteboards")
+}
+
+model Document {
+  id             String   @id @default(cuid())
+  name           String
+  filepath       String
+  mimeType       String
+  size           Int
+  folderId       String?
+  organizationId String
+  createdById    String
+  version        Int      @default(1)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  folder         Folder?           @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  versions       DocumentVersion[]
+
+  @@index([organizationId])
+  @@index([folderId])
+  @@index([createdById])
+  @@map("documents")
+}
+
+model Folder {
+  id             String   @id @default(cuid())
+  name           String
+  parentId       String?
+  organizationId String
+  createdAt      DateTime @default(now())
+  
+  parent         Folder?      @relation("FolderHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children       Folder[]     @relation("FolderHierarchy")
+  documents      Document[]
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([parentId])
+  @@map("folders")
+}
+
+model DocumentVersion {
+  id           String   @id @default(cuid())
+  documentId   String
+  version      Int
+  filepath     String
+  size         Int
+  createdById  String
+  createdAt    DateTime @default(now())
+  
+  document     Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+  @@map("document_versions")
 }
 

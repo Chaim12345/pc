@@ -4,28 +4,43 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../contexts/AuthContext'
 import { useSocket } from '../contexts/SocketContext'
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts'
-import { useTheme } from '../contexts/ThemeContext'
 import { useToast } from '../contexts/ToastContext'
 import { api } from '../services/api'
-import { Board, Item, Column, Group, SocketEvent } from '@monday-clone/shared'
+import { Board, SocketEvent } from '@monday-clone/shared'
 import ViewSelector from '../components/ViewSelector'
-import GlobalSearch from '../components/GlobalSearch'
-import NotificationCenter from '../components/NotificationCenter'
+import AIAssistant from '../components/AIAssistant'
+import GuestAccessModal from '../components/GuestAccessModal'
+import RecurringTasksModal from '../components/RecurringTasksModal'
+import ExportModal from '../components/ExportModal'
+import ImportModal from '../components/ImportModal'
+import FilterModal, { FilterRule } from '../components/FilterModal'
+import SortModal, { SortRule } from '../components/SortModal'
+import EnhancedAutomationBuilder from '../components/EnhancedAutomationBuilder'
+import { usePage } from '../contexts/PageContext'
+
 
 export default function BoardView() {
   const { boardId } = useParams<{ boardId: string }>()
   const navigate = useNavigate()
-  const { user, logout } = useAuth()
-  const { theme, toggleTheme } = useTheme()
+  const { setPageTitle, setPageActions } = usePage()
+  const { user } = useAuth()
   const { socket, joinBoard, leaveBoard } = useSocket()
   const { showToast } = useToast()
   const queryClient = useQueryClient()
-  const [showUserMenu, setShowUserMenu] = useState(false)
-  const [showShareModal, setShowShareModal] = useState(false)
   const [showBoardMenu, setShowBoardMenu] = useState(false)
   const [showAddColumn, setShowAddColumn] = useState(false)
   const [newColumnTitle, setNewColumnTitle] = useState('')
   const [newColumnType, setNewColumnType] = useState('TEXT')
+  const [showAIAssistant, setShowAIAssistant] = useState(false)
+  const [showGuestAccess, setShowGuestAccess] = useState(false)
+  const [showRecurringTasks, setShowRecurringTasks] = useState(false)
+  const [showExport, setShowExport] = useState(false)
+  const [showImport, setShowImport] = useState(false)
+  const [showFilterModal, setShowFilterModal] = useState(false)
+  const [showSortModal, setShowSortModal] = useState(false)
+  const [showAutomations, setShowAutomations] = useState(false)
+  const [filterRules, setFilterRules] = useState<FilterRule[]>([])
+  const [sortRules, setSortRules] = useState<SortRule[]>([])
 
   // Enable keyboard shortcuts
   useKeyboardShortcuts({ boardId })
@@ -38,6 +53,30 @@ export default function BoardView() {
     },
     enabled: !!boardId,
   })
+
+  useEffect(() => {
+    if (board) {
+      setPageTitle(board.name)
+      setPageActions(
+        <div className="flex items-center space-x-2">
+           <button
+              onClick={() => setShowGuestAccess(true)}
+              className="px-4 py-2 text-sm font-medium text-white bg-monday-primary hover:bg-monday-primaryHover rounded-lg transition-all hover:scale-105 hover:shadow-lg hidden md:flex items-center space-x-2"
+              title="Share board with guests"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+              </svg>
+              <span className="hidden xl:inline">Share</span>
+            </button>
+        </div>
+      )
+    }
+
+    return () => {
+      setPageActions(null)
+    }
+  }, [board, setPageTitle, setPageActions, setShowGuestAccess])
 
   const addColumnMutation = useMutation({
     mutationFn: async ({ title, type }: { title: string; type: string }) => {
@@ -75,15 +114,15 @@ export default function BoardView() {
   useEffect(() => {
     if (!socket) return
 
-    const handleItemChanged = (data: any) => {
+    const handleItemChanged = () => {
       queryClient.invalidateQueries({ queryKey: ['board', boardId] })
     }
 
-    const handleColumnChanged = (data: any) => {
+    const handleColumnChanged = () => {
       queryClient.invalidateQueries({ queryKey: ['board', boardId] })
     }
 
-    const handleGroupChanged = (data: any) => {
+    const handleGroupChanged = () => {
       queryClient.invalidateQueries({ queryKey: ['board', boardId] })
     }
 
@@ -147,105 +186,7 @@ export default function BoardView() {
 
   return (
     <div className="flex flex-col h-screen w-full bg-monday-background dark:bg-monday-dark overflow-hidden">
-      {/* Top Navigation Bar */}
-      <nav className="h-16 bg-white dark:bg-monday-darkLight border-b border-monday-border dark:border-gray-700 flex-shrink-0 shadow-sm z-30">
-        <div className="h-full px-6 flex items-center justify-between">
-          {/* Left section */}
-          <div className="flex items-center space-x-4 min-w-0 flex-1">
-            <button
-              onClick={() => navigate('/dashboard')}
-              className="flex items-center space-x-2 text-monday-textLight dark:text-gray-400 hover:text-monday-primary dark:hover:text-monday-primary transition-all hover:scale-105 group flex-shrink-0"
-              title="Back to Dashboard"
-            >
-              <svg className="w-5 h-5 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              <span className="font-medium hidden sm:inline">Back</span>
-            </button>
-            <div className="h-8 w-px bg-monday-border dark:bg-gray-700 hidden sm:block"></div>
-            <div className="flex items-center space-x-3 min-w-0">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-monday-blue via-monday-purple to-monday-orange flex items-center justify-center text-white font-bold text-lg shadow-md flex-shrink-0">
-                {board.name.charAt(0).toUpperCase()}
-              </div>
-              <div className="min-w-0">
-                <h1 className="text-xl font-bold text-monday-text dark:text-white truncate">{board.name}</h1>
-                {board.description && (
-                  <p className="text-xs text-monday-textLight dark:text-gray-400 truncate hidden lg:block">
-                    {board.description}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Right section */}
-          <div className="flex items-center space-x-3 flex-shrink-0">
-            <div className="w-64 hidden lg:block">
-              <GlobalSearch />
-            </div>
-            
-            <NotificationCenter />
-            
-            <button
-              onClick={() => setShowShareModal(true)}
-              className="px-3 py-2 text-sm font-medium text-monday-text dark:text-white hover:bg-monday-background dark:hover:bg-gray-800 rounded-lg transition-all hover:scale-105 hidden md:flex items-center space-x-2"
-              title="Share board"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-              </svg>
-              <span className="hidden xl:inline">Share</span>
-            </button>
-
-            <button
-              onClick={toggleTheme}
-              className="p-2 rounded-lg text-monday-textLight dark:text-gray-400 hover:bg-monday-background dark:hover:bg-gray-800 transition-all hover:scale-110"
-              title="Toggle theme"
-            >
-              {theme === 'dark' ? '☀️' : '🌙'}
-            </button>
-
-            <div className="h-8 w-px bg-monday-border dark:bg-gray-700 hidden sm:block"></div>
-
-            <div className="relative">
-              <button
-                onClick={() => setShowUserMenu(!showUserMenu)}
-                className="w-9 h-9 rounded-full bg-gradient-to-br from-monday-primary to-monday-purple flex items-center justify-center text-white font-semibold text-sm hover:scale-110 transition-transform shadow-md"
-                title={user?.name || 'User'}
-              >
-                {user?.name?.charAt(0).toUpperCase()}
-              </button>
-
-              {showUserMenu && (
-                <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-monday-darkLight rounded-lg shadow-monday-hover border border-monday-border dark:border-gray-700 z-50 py-2 animate-in fade-in slide-in-from-top-2 duration-200">
-                  <div className="px-4 py-3 border-b border-monday-border dark:border-gray-700">
-                    <div className="font-semibold text-monday-text dark:text-white">{user?.name}</div>
-                    <div className="text-sm text-monday-textLight dark:text-gray-400">{user?.email}</div>
-                  </div>
-                  <button
-                    onClick={() => navigate('/settings/profile')}
-                    className="w-full px-4 py-2 text-left text-sm text-monday-text dark:text-white hover:bg-monday-background dark:hover:bg-gray-800 transition-colors flex items-center space-x-2"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                    <span>Profile Settings</span>
-                  </button>
-                  <button
-                    onClick={logout}
-                    className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center space-x-2"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                    </svg>
-                    <span>Logout</span>
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </nav>
+      {/* Top Navigation Bar is now in MainLayout */}
 
       {/* Quick Actions Bar */}
       <div className="bg-white dark:bg-monday-darkLight border-b border-monday-border dark:border-gray-700 px-6 py-3 flex-shrink-0 z-20">
@@ -263,13 +204,48 @@ export default function BoardView() {
             />
             <QuickActionButton
               icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg>}
-              label="Filter"
-              onClick={() => showToast('Filter feature coming soon', 'info')}
+              label={`Filter${filterRules.length > 0 ? ` (${filterRules.length})` : ''}`}
+              onClick={() => setShowFilterModal(true)}
             />
             <QuickActionButton
               icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" /></svg>}
-              label="Sort"
-              onClick={() => showToast('Sort feature coming soon', 'info')}
+              label={`Sort${sortRules.length > 0 ? ` (${sortRules.length})` : ''}`}
+              onClick={() => setShowSortModal(true)}
+            />
+            <QuickActionButton
+              icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>}
+              label="Forms"
+              onClick={() => navigate(`/forms/board/${boardId}`)}
+            />
+            <QuickActionButton
+              icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>}
+              label="AI Assistant"
+              onClick={() => setShowAIAssistant(true)}
+            />
+            <QuickActionButton
+              icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>}
+              label="Guest Access"
+              onClick={() => setShowGuestAccess(true)}
+            />
+            <QuickActionButton
+              icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
+              label="Recurring Tasks"
+              onClick={() => setShowRecurringTasks(true)}
+            />
+            <QuickActionButton
+              icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>}
+              label="Import"
+              onClick={() => setShowImport(true)}
+            />
+            <QuickActionButton
+              icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>}
+              label="Export"
+              onClick={() => setShowExport(true)}
+            />
+            <QuickActionButton
+              icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>}
+              label="Automations"
+              onClick={() => setShowAutomations(true)}
             />
           </div>
 
@@ -294,9 +270,49 @@ export default function BoardView() {
       {/* Main Content */}
       <main className="flex-1 flex flex-col overflow-hidden p-6 min-h-0">
         <div className="flex-1 min-h-0 overflow-hidden">
-          <ViewSelector board={board} />
+          <ViewSelector board={board} filterRules={filterRules} sortRules={sortRules} />
         </div>
       </main>
+
+      {/* AI Assistant Modal */}
+      <AIAssistant
+        boardId={boardId || ''}
+        groupId={board?.groups?.[0]?.id}
+        isOpen={showAIAssistant}
+        onClose={() => setShowAIAssistant(false)}
+        context="board"
+      />
+
+      {/* Guest Access Modal */}
+      <GuestAccessModal
+        boardId={boardId || ''}
+        isOpen={showGuestAccess}
+        onClose={() => setShowGuestAccess(false)}
+      />
+
+      {/* Recurring Tasks Modal */}
+      <RecurringTasksModal
+        boardId={boardId || ''}
+        groupId={board?.groups?.[0]?.id}
+        isOpen={showRecurringTasks}
+        onClose={() => setShowRecurringTasks(false)}
+      />
+
+      {/* Export Modal */}
+      <ExportModal
+        boardId={boardId || ''}
+        boardName={board?.name || 'Board'}
+        isOpen={showExport}
+        onClose={() => setShowExport(false)}
+      />
+
+      {/* Import Modal */}
+      <ImportModal
+        boardId={boardId || ''}
+        boardName={board?.name || 'Board'}
+        isOpen={showImport}
+        onClose={() => setShowImport(false)}
+      />
 
       {/* Add Column Modal */}
       {showAddColumn && (
@@ -380,6 +396,36 @@ export default function BoardView() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Filter Modal */}
+      <FilterModal
+        isOpen={showFilterModal}
+        onClose={() => setShowFilterModal(false)}
+        columns={board?.columns || []}
+        onApplyFilter={(rules) => {
+          setFilterRules(rules)
+          showToast(`${rules.length} filter${rules.length !== 1 ? 's' : ''} applied`, 'success')
+        }}
+      />
+
+      {/* Sort Modal */}
+      <SortModal
+        isOpen={showSortModal}
+        onClose={() => setShowSortModal(false)}
+        columns={board?.columns || []}
+        onApplySort={(rules) => {
+          setSortRules(rules)
+          showToast(`Sorted by ${rules.length} column${rules.length !== 1 ? 's' : ''}`, 'success')
+        }}
+      />
+
+      {/* Automations Modal */}
+      {showAutomations && boardId && (
+        <EnhancedAutomationBuilder
+          boardId={boardId}
+          onClose={() => setShowAutomations(false)}
+        />
       )}
     </div>
   )
