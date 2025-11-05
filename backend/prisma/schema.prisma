@@ -1,0 +1,348 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  avatar    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  organizationMemberships OrganizationMember[]
+  createdBoards           Board[]              @relation("BoardCreator")
+  comments                Comment[]
+  attachments             Attachment[]
+  timeEntries             TimeEntry[]
+  notifications           Notification[]
+  teamMemberships         TeamMember[]
+
+  @@map("users")
+}
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  members    OrganizationMember[]
+  boards     Board[]
+  dashboards Dashboard[]
+  teams      Team[]
+
+  @@map("organizations")
+}
+
+model OrganizationMember {
+  id             String           @id @default(cuid())
+  organizationId String
+  userId         String
+  role           String           // OWNER, ADMIN, MEMBER, VIEWER
+
+  // Relations
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+  @@index([userId])
+  @@index([organizationId])
+  @@map("organization_members")
+}
+
+model Board {
+  id             String   @id @default(cuid())
+  name           String
+  description    String?
+  organizationId String
+  createdById    String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  creator        User             @relation("BoardCreator", fields: [createdById], references: [id])
+  groups         Group[]
+  columns        Column[]
+  items          Item[]
+  automations    Automation[]
+  teams          BoardTeam[]
+
+  @@index([organizationId])
+  @@index([createdById])
+  @@index([updatedAt])
+  @@map("boards")
+}
+
+model Group {
+  id        String   @id @default(cuid())
+  boardId   String
+  title     String
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  board     Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  items     Item[]
+
+  @@index([boardId])
+  @@index([position])
+  @@map("groups")
+}
+
+model Item {
+  id        String   @id @default(cuid())
+  boardId   String
+  groupId   String
+  name      String
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  board         Board         @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  group         Group         @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  columnValues  ColumnValue[]
+  comments      Comment[]     @relation("ItemComments")
+  attachments   Attachment[]
+  timeEntries   TimeEntry[]
+
+  @@index([boardId])
+  @@index([groupId])
+  @@index([position])
+  @@index([updatedAt])
+  @@map("items")
+}
+
+model Column {
+  id        String   @id @default(cuid())
+  boardId   String
+  title     String
+  type      String   // STATUS, TEXT, NUMBER, DATE, etc.
+  position  Int      @default(0)
+  settings  Json?    @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  board        Board         @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  columnValues ColumnValue[]
+
+  @@index([boardId])
+  @@index([position])
+  @@map("columns")
+}
+
+model ColumnValue {
+  id        String   @id @default(cuid())
+  itemId    String
+  columnId  String
+  value     Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  item   Item   @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  column Column  @relation(fields: [columnId], references: [id], onDelete: Cascade)
+
+  @@unique([itemId, columnId])
+  @@index([itemId])
+  @@index([columnId])
+  @@map("column_values")
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  itemId    String
+  userId    String
+  text      String
+  parentId  String?
+  mentions  String[] @default([])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  item     Item     @relation("ItemComments", fields: [itemId], references: [id], onDelete: Cascade)
+  parent   Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies  Comment[] @relation("CommentReplies")
+  user     User      @relation(fields: [userId], references: [id])
+
+  @@index([itemId])
+  @@index([userId])
+  @@index([parentId])
+  @@index([createdAt])
+  @@map("comments")
+}
+
+model Attachment {
+  id        String   @id @default(cuid())
+  itemId    String
+  userId    String
+  filename  String
+  filepath  String
+  mimeType  String
+  size      Int
+  createdAt DateTime @default(now())
+
+  // Relations
+  item Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([itemId])
+  @@index([userId])
+  @@map("attachments")
+}
+
+model Automation {
+  id        String   @id @default(cuid())
+  boardId   String
+  name      String
+  trigger   Json
+  actions   Json
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  board Board @relation(fields: [boardId], references: [id], onDelete: Cascade)
+
+  @@index([boardId])
+  @@index([enabled])
+  @@map("automations")
+}
+
+model Dashboard {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  widgets      Widget[]
+
+  @@index([organizationId])
+  @@map("dashboards")
+}
+
+model Widget {
+  id          String   @id @default(cuid())
+  dashboardId String
+  type        String   // NUMBERS, CHART, CLOCK, BOARD, TEXT
+  title       String
+  position    Json     // { x, y, w, h }
+  config      Json     @default("{}")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  dashboard Dashboard @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+
+  @@map("widgets")
+}
+
+model TimeEntry {
+  id          String    @id @default(cuid())
+  itemId      String
+  userId      String
+  startTime   DateTime
+  endTime     DateTime?
+  duration    Int?      // in seconds
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  item Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([itemId])
+  @@index([userId])
+  @@index([startTime])
+  @@map("time_entries")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([read])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+model Team {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  description    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  members        TeamMember[]
+  boards         BoardTeam[]
+
+  @@index([organizationId])
+  @@map("teams")
+}
+
+model TeamMember {
+  id        String   @id @default(cuid())
+  teamId    String
+  userId    String
+  role      String   // OWNER, ADMIN, MEMBER
+  createdAt DateTime @default(now())
+
+  // Relations
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, userId])
+  @@index([teamId])
+  @@index([userId])
+  @@map("team_members")
+}
+
+model BoardTeam {
+  id        String   @id @default(cuid())
+  boardId   String
+  teamId    String
+  access    String   // VIEW, EDIT, ADMIN
+  createdAt DateTime @default(now())
+
+  // Relations
+  board Board @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  team  Team  @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([boardId, teamId])
+  @@index([boardId])
+  @@index([teamId])
+  @@map("board_teams")
+}
+

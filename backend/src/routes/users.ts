@@ -1,0 +1,18 @@
+import { Router } from 'express';
+import { usersController, uploadMiddleware } from '../controllers/users';
+import { authenticate } from '../middleware/auth';
+
+const router = Router();
+
+// All user routes require authentication
+router.use(authenticate);
+
+router.get('/me/profile', usersController.getProfile);
+router.put('/me/profile', usersController.updateProfile);
+router.put('/me/password', usersController.changePassword);
+router.put('/me/avatar', uploadMiddleware, usersController.uploadAvatar);
+router.get('/search', usersController.searchUsers);
+router.get('/:id', usersController.getUserById);
+
+export default router;
+
