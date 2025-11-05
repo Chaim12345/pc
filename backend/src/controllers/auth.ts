@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions, Secret } from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
@@ -63,13 +63,14 @@ export const authController = {
       });
 
       // Generate JWT
-      const jwtSecret = process.env.JWT_SECRET ?? 'secret';
-      const jwtExpiresIn = process.env.JWT_EXPIRES_IN ?? '7d';
+      const jwtSecret: Secret = process.env.JWT_SECRET ?? 'secret';
+      const jwtExpiresIn = (process.env.JWT_EXPIRES_IN ?? '7d') as SignOptions['expiresIn'];
+      const signOptions: SignOptions = { expiresIn: jwtExpiresIn };
 
       const token = jwt.sign(
         { userId: user.id },
         jwtSecret,
-        { expiresIn: jwtExpiresIn }
+        signOptions
       );
 
       res.status(201).json({
@@ -123,13 +124,14 @@ export const authController = {
       }
 
       // Generate JWT
-      const jwtSecret = process.env.JWT_SECRET ?? 'secret';
-      const jwtExpiresIn = process.env.JWT_EXPIRES_IN ?? '7d';
+      const jwtSecret: Secret = process.env.JWT_SECRET ?? 'secret';
+      const jwtExpiresIn = (process.env.JWT_EXPIRES_IN ?? '7d') as SignOptions['expiresIn'];
+      const signOptions: SignOptions = { expiresIn: jwtExpiresIn };
 
       const token = jwt.sign(
         { userId: user.id },
         jwtSecret,
-        { expiresIn: jwtExpiresIn }
+        signOptions
       );
 
       res.json({
