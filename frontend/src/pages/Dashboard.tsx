@@ -40,21 +40,33 @@ export default function Dashboard() {
 
   return (
     <div className="max-w-7xl mx-auto">
-      {/* This content is now part of the MainLayout header */}
-      {/* <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold text-monday-text dark:text-white">Recent Boards</h2>
-      </div> */}
+      {/* Skip to main content for accessibility */}
+      <a
+        href="#boards-grid"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-monday-primary text-white px-4 py-2 rounded-lg z-50"
+      >
+        Skip to boards
+      </a>
 
       {/* Boards Grid */}
       {boards && boards.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div id="boards-grid" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" role="grid" aria-label="Your boards">
           {boards.map((board, index) => {
             const colorScheme = BOARD_COLORS[index % BOARD_COLORS.length]
             return (
               <div
                 key={board.id}
+                role="button"
+                tabIndex={0}
                 onClick={() => navigate(`/board/${board.id}`)}
-                className="group relative bg-white dark:bg-monday-darkLight rounded-xl shadow-monday hover:shadow-monday-hover cursor-pointer transition-all duration-300 transform hover:scale-[1.03] overflow-hidden"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    navigate(`/board/${board.id}`)
+                  }
+                }}
+                aria-label={`Open board: ${board.name}. ${board.groups?.length || 0} groups. Team board.`}
+                className="group relative bg-white dark:bg-monday-darkLight rounded-xl shadow-monday hover:shadow-monday-hover cursor-pointer transition-all duration-300 transform hover:scale-[1.03] overflow-hidden focus:outline-none focus:ring-2 focus:ring-monday-primary focus:ring-offset-2"
               >
                 {/* Colorful Header */}
                 <div className={`h-28 ${colorScheme.bg} p-5 flex items-center justify-between relative overflow-hidden`}>
@@ -66,8 +78,15 @@ export default function Dashboard() {
                       </svg>
                     </div>
                   </div>
-                  <button className="relative z-10 opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-white/30 rounded-lg">
-                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <button
+                    className="relative z-10 opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-white/30 rounded-lg"
+                    aria-label={`Board options for ${board.name}`}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      // TODO: Implement board options menu
+                    }}
+                  >
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
                     </svg>
                   </button>
@@ -78,20 +97,22 @@ export default function Dashboard() {
                   <h3 className="font-bold text-lg text-monday-text dark:text-white mb-2 truncate group-hover:text-monday-primary transition-colors">
                     {board.name}
                   </h3>
-                  <div className="flex items-center text-xs text-monday-textLight dark:text-gray-400 space-x-4">
-                    <span className="flex items-center">
-                      <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <dl className="flex items-center text-xs text-monday-textLight dark:text-gray-400 space-x-4">
+                    <div className="flex items-center">
+                      <dt className="sr-only">Number of groups</dt>
+                      <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                       </svg>
-                      {board.groups?.length || 0} groups
-                    </span>
-                    <span className="flex items-center">
-                      <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <dd>{board.groups?.length || 0} groups</dd>
+                    </div>
+                    <div className="flex items-center">
+                      <dt className="sr-only">Board type</dt>
+                      <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                       </svg>
-                      Team
-                    </span>
-                  </div>
+                      <dd>Team</dd>
+                    </div>
+                  </dl>
                 </div>
               </div>
             )
@@ -99,13 +120,13 @@ export default function Dashboard() {
         </div>
       ) : (
         /* Empty State */
-        <div className="text-center py-20 bg-white dark:bg-monday-darkLight rounded-xl shadow-monday">
+        <div className="text-center py-20 bg-white dark:bg-monday-darkLight rounded-xl shadow-monday" role="region" aria-labelledby="empty-state-heading">
           <div className="inline-flex items-center justify-center w-24 h-24 bg-monday-primaryLight dark:bg-monday-primary/20 rounded-full mb-6">
-            <svg className="w-12 h-12 text-monday-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-12 h-12 text-monday-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
             </svg>
           </div>
-          <h3 className="text-2xl font-bold text-monday-text dark:text-white mb-3">
+          <h3 id="empty-state-heading" className="text-2xl font-bold text-monday-text dark:text-white mb-3">
             No boards yet
           </h3>
           <p className="text-monday-textLight dark:text-gray-400 mb-8 max-w-md mx-auto">
