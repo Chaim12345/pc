@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,59 +8,67 @@ datasource db {
 }
 
 model User {
-  id                      String    @id @default(cuid())
-  email                   String    @unique
+  id                      String               @id @default(cuid())
+  email                   String               @unique
   password                String
   name                    String
   avatar                  String?
-  isTwoFactorEnabled      Boolean   @default(false)
+  createdAt               DateTime             @default(now())
+  updatedAt               DateTime             @updatedAt
+  isTwoFactorEnabled      Boolean              @default(false)
   twoFactorSecret         String?
   twoFactorRecoveryCodes  String[]
-  createdAt               DateTime  @default(now())
-  updatedAt               DateTime  @updatedAt
-
-  // Relations
-  organizationMemberships OrganizationMember[]
+  // Enhanced user management fields
+  status                  String               @default("active") // active, inactive, suspended, pending
+  lastSeenAt              DateTime?
+  bio                     String?
+  phoneNumber             String?
+  timezone                String               @default("UTC")
+  language                String               @default("en")
+  department              String?
+  jobTitle                String?
+  location                String?
+  invitedById             String?
+  invitedAt               DateTime?
+  emailVerified           Boolean              @default(false)
+  emailVerifiedAt         DateTime?
+  activityLogs            ActivityLog[]
+  attachments             Attachment[]
   createdBoards           Board[]              @relation("BoardCreator")
   comments                Comment[]
-  attachments             Attachment[]
-  timeEntries             TimeEntry[]
   notifications           Notification[]
+  organizationMemberships OrganizationMember[]
   teamMemberships         TeamMember[]
+  timeEntries             TimeEntry[]
   createdWorkdocs         Workdoc[]            @relation("WorkdocCreator")
-  activityLogs            ActivityLog[]
 
   @@map("users")
 }
 
 model Organization {
-  id        String   @id @default(cuid())
-  name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  members      OrganizationMember[]
-  boards       Board[]
-  dashboards   Dashboard[]
-  teams        Team[]
-  workdocs     Workdoc[]
-  whiteboards  Whiteboard[]
-  documents    Document[]
-  folders      Folder[]
+  id          String               @id @default(cuid())
+  name        String
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  boards      Board[]
+  dashboards  Dashboard[]
+  documents   Document[]
+  folders     Folder[]
+  members     OrganizationMember[]
+  teams       Team[]
+  whiteboards Whiteboard[]
+  workdocs    Workdoc[]
 
   @@map("organizations")
 }
 
 model OrganizationMember {
-  id             String           @id @default(cuid())
+  id             String       @id @default(cuid())
   organizationId String
   userId         String
-  role           String           // OWNER, ADMIN, MEMBER, VIEWER
-
-  // Relations
-  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role           String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([organizationId, userId])
   @@index([userId])
@@ -72,25 +77,23 @@ model OrganizationMember {
 }
 
 model Board {
-  id             String   @id @default(cuid())
+  id             String            @id @default(cuid())
   name           String
   description    String?
   organizationId String
   createdById    String
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  // Relations
-  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  creator        User              @relation("BoardCreator", fields: [createdById], references: [id])
-  groups         Group[]
-  columns        Column[]
-  items          Item[]
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
   automations    Automation[]
-  teams          BoardTeam[]
-  guestAccesses  GuestAccess[]
-  recurringTasks RecurringTask[]
   permissions    BoardPermission[]
+  teams          BoardTeam[]
+  creator        User              @relation("BoardCreator", fields: [createdById], references: [id])
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  columns        Column[]
+  groups         Group[]
+  guestAccesses  GuestAccess[]
+  items          Item[]
+  recurringTasks RecurringTask[]
 
   @@index([organizationId])
   @@index([createdById])
@@ -103,13 +106,11 @@ model BoardPermission {
   boardId   String
   userId    String?
   teamId    String?
-  role      String   // OWNER, ADMIN, EDITOR, COMMENTER, VIEWER
+  role      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  // Relations
-  board Board  @relation(fields: [boardId], references: [id], onDelete: Cascade)
-  team  Team?  @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  board     Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  team      Team?    @relation(fields: [teamId], references: [id], onDelete: Cascade)
 
   @@unique([boardId, userId])
   @@unique([boardId, teamId])
@@ -126,8 +127,6 @@ model Group {
   position  Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  // Relations
   board     Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
   items     Item[]
 
@@ -137,27 +136,25 @@ model Group {
 }
 
 model Item {
-  id        String   @id @default(cuid())
-  boardId   String
-  groupId   String
-  name      String
-  position  Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  board         Board         @relation(fields: [boardId], references: [id], onDelete: Cascade)
-  group         Group         @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  columnValues  ColumnValue[]
-  comments      Comment[]     @relation("ItemComments")
-  attachments   Attachment[]
-  timeEntries   TimeEntry[]
-  reactions     Reaction[]
-  parentId      String?
-  parent        Item?         @relation("Subitems", fields: [parentId], references: [id], onDelete: Cascade)
-  subitems      Item[]        @relation("Subitems")
-  dependencies  ItemDependency[] @relation("ItemDependencies")
-  dependedOnBy  ItemDependency[] @relation("DependsOnItems")
+  id           String           @id @default(cuid())
+  boardId      String
+  groupId      String
+  name         String
+  position     Int              @default(0)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  parentId     String?
+  attachments  Attachment[]
+  columnValues ColumnValue[]
+  comments     Comment[]        @relation("ItemComments")
+  dependedOnBy ItemDependency[] @relation("DependsOnItems")
+  dependencies ItemDependency[] @relation("ItemDependencies")
+  board        Board            @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  group        Group            @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  parent       Item?            @relation("Subitems", fields: [parentId], references: [id], onDelete: Cascade)
+  subitems     Item[]           @relation("Subitems")
+  reactions    Reaction[]
+  timeEntries  TimeEntry[]
 
   @@index([boardId])
   @@index([groupId])
@@ -168,18 +165,16 @@ model Item {
 }
 
 model Column {
-  id        String   @id @default(cuid())
-  boardId   String
-  title     String
-  type      String   // STATUS, TEXT, NUMBER, DATE, etc.
-  position  Int      @default(0)
-  settings  Json?    @default("{}")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  board        Board         @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  id           String        @id @default(cuid())
+  boardId      String
+  title        String
+  type         String
+  position     Int           @default(0)
+  settings     Json?         @default("{}")
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
   columnValues ColumnValue[]
+  board        Board         @relation(fields: [boardId], references: [id], onDelete: Cascade)
 
   @@index([boardId])
   @@index([position])
@@ -193,10 +188,8 @@ model ColumnValue {
   value     Json?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  // Relations
-  item   Item   @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  column Column  @relation(fields: [columnId], references: [id], onDelete: Cascade)
+  column    Column   @relation(fields: [columnId], references: [id], onDelete: Cascade)
+  item      Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
 
   @@unique([itemId, columnId])
   @@index([itemId])
@@ -205,16 +198,14 @@ model ColumnValue {
 }
 
 model Comment {
-  id        String   @id @default(cuid())
+  id        String     @id @default(cuid())
   itemId    String
   userId    String
   text      String
   parentId  String?
-  mentions  String[] @default([])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
+  mentions  String[]   @default([])
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
   item      Item       @relation("ItemComments", fields: [itemId], references: [id], onDelete: Cascade)
   parent    Comment?   @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
   replies   Comment[]  @relation("CommentReplies")
@@ -233,12 +224,10 @@ model Reaction {
   commentId String?
   itemId    String?
   userId    String
-  emoji     String   // 👍, ❤️, 😊, etc.
+  emoji     String
   createdAt DateTime @default(now())
-
-  // Relations
-  comment Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
-  item    Item?    @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  comment   Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  item      Item?    @relation(fields: [itemId], references: [id], onDelete: Cascade)
 
   @@unique([commentId, userId, emoji])
   @@unique([itemId, userId, emoji])
@@ -257,10 +246,8 @@ model Attachment {
   mimeType  String
   size      Int
   createdAt DateTime @default(now())
-
-  // Relations
-  item Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  user User @relation(fields: [userId], references: [id])
+  item      Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id])
 
   @@index([itemId])
   @@index([userId])
@@ -276,9 +263,7 @@ model Automation {
   enabled   Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  // Relations
-  board Board @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  board     Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
 
   @@index([boardId])
   @@index([enabled])
@@ -286,32 +271,28 @@ model Automation {
 }
 
 model Dashboard {
-  id             String   @id @default(cuid())
+  id             String       @id @default(cuid())
   organizationId String
   name           String
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  // Relations
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  widgets      Widget[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  widgets        Widget[]
 
   @@index([organizationId])
   @@map("dashboards")
 }
 
 model Widget {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   dashboardId String
-  type        String   // NUMBERS, CHART, CLOCK, BOARD, TEXT
+  type        String
   title       String
-  position    Json     // { x, y, w, h }
-  config      Json     @default("{}")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  dashboard Dashboard @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+  position    Json
+  config      Json      @default("{}")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  dashboard   Dashboard @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
 
   @@map("widgets")
 }
@@ -322,14 +303,12 @@ model TimeEntry {
   userId      String
   startTime   DateTime
   endTime     DateTime?
-  duration    Int?      // in seconds
+  duration    Int?
   description String?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-
-  // Relations
-  item Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  user User @relation(fields: [userId], references: [id])
+  item        Item      @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id])
 
   @@index([itemId])
   @@index([userId])
@@ -346,9 +325,7 @@ model Notification {
   read      Boolean  @default(false)
   metadata  Json?
   createdAt DateTime @default(now())
-
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([read])
@@ -357,18 +334,16 @@ model Notification {
 }
 
 model Team {
-  id             String   @id @default(cuid())
+  id             String            @id @default(cuid())
   organizationId String
   name           String
   description    String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  // Relations
-  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  members        TeamMember[]
-  boards         BoardTeam[]
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
   permissions    BoardPermission[]
+  boards         BoardTeam[]
+  members        TeamMember[]
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
   @@map("teams")
@@ -378,12 +353,10 @@ model TeamMember {
   id        String   @id @default(cuid())
   teamId    String
   userId    String
-  role      String   // OWNER, ADMIN, MEMBER
+  role      String
   createdAt DateTime @default(now())
-
-  // Relations
-  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([teamId, userId])
   @@index([teamId])
@@ -395,12 +368,10 @@ model BoardTeam {
   id        String   @id @default(cuid())
   boardId   String
   teamId    String
-  access    String   // VIEW, EDIT, ADMIN
+  access    String
   createdAt DateTime @default(now())
-
-  // Relations
-  board Board @relation(fields: [boardId], references: [id], onDelete: Cascade)
-  team  Team  @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  board     Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
 
   @@unique([boardId, teamId])
   @@index([boardId])
@@ -409,17 +380,15 @@ model BoardTeam {
 }
 
 model Workdoc {
-  id             String   @id @default(cuid())
+  id             String       @id @default(cuid())
   title          String
-  content        String   @db.Text
+  content        String
   organizationId String
   createdById    String
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  // Relations
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  creator      User         @relation("WorkdocCreator", fields: [createdById], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  creator        User         @relation("WorkdocCreator", fields: [createdById], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
   @@index([createdById])
@@ -431,10 +400,10 @@ model IntegrationConfig {
   id             String   @id @default(cuid())
   boardId        String?
   organizationId String
-  type           String   // 'slack', 'teams', 'zapier', etc.
+  type           String
   webhookUrl     String
   enabled        Boolean  @default(true)
-  events         String[] @default([]) // Events to trigger notifications
+  events         String[] @default([])
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -446,19 +415,18 @@ model IntegrationConfig {
 }
 
 model Form {
-  id             String   @id @default(cuid())
-  boardId        String
-  groupId        String
-  name           String
-  description    String?
-  fields         Json     // Form field definitions
-  settings       Json     @default("{}")  // Form settings (thank you message, redirect, etc)
-  isPublic       Boolean  @default(true)
-  publicToken    String   @unique @default(cuid())
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  submissions    FormSubmission[]
+  id          String           @id @default(cuid())
+  boardId     String
+  groupId     String
+  name        String
+  description String?
+  fields      Json
+  settings    Json             @default("{}")
+  isPublic    Boolean          @default(true)
+  publicToken String           @unique @default(cuid())
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  submissions FormSubmission[]
 
   @@index([boardId])
   @@index([groupId])
@@ -467,16 +435,15 @@ model Form {
 }
 
 model FormSubmission {
-  id           String   @id @default(cuid())
-  formId       String
-  itemId       String?  // Created item ID
-  data         Json     // Submitted form data
+  id             String   @id @default(cuid())
+  formId         String
+  itemId         String?
+  data           Json
   submitterEmail String?
   submitterName  String?
-  ipAddress    String?
-  createdAt    DateTime @default(now())
-
-  form         Form     @relation(fields: [formId], references: [id], onDelete: Cascade)
+  ipAddress      String?
+  createdAt      DateTime @default(now())
+  form           Form     @relation(fields: [formId], references: [id], onDelete: Cascade)
 
   @@index([formId])
   @@index([itemId])
@@ -485,20 +452,19 @@ model FormSubmission {
 }
 
 model GuestAccess {
-  id            String   @id @default(cuid())
-  boardId       String
-  token         String   @unique @default(cuid())
-  email         String?
-  name          String?
-  accessLevel   String   // 'view', 'comment', 'edit'
-  expiresAt     DateTime?
-  isActive      Boolean  @default(true)
-  createdById   String
-  createdAt     DateTime @default(now())
+  id             String    @id @default(cuid())
+  boardId        String
+  token          String    @unique @default(cuid())
+  email          String?
+  name           String?
+  accessLevel    String
+  expiresAt      DateTime?
+  isActive       Boolean   @default(true)
+  createdById    String
+  createdAt      DateTime  @default(now())
   lastAccessedAt DateTime?
-  accessCount   Int      @default(0)
-
-  board         Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  accessCount    Int       @default(0)
+  board          Board     @relation(fields: [boardId], references: [id], onDelete: Cascade)
 
   @@index([boardId])
   @@index([token])
@@ -509,15 +475,14 @@ model GuestAccess {
 }
 
 model ItemDependency {
-  id            String   @id @default(cuid())
-  itemId        String   // The dependent item
-  dependsOnId   String   // The item it depends on
-  type          String   // 'blocks', 'blocked_by', 'related_to'
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  item          Item     @relation("ItemDependencies", fields: [itemId], references: [id], onDelete: Cascade)
-  dependsOn     Item     @relation("DependsOnItems", fields: [dependsOnId], references: [id], onDelete: Cascade)
+  id          String   @id @default(cuid())
+  itemId      String
+  dependsOnId String
+  type        String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  dependsOn   Item     @relation("DependsOnItems", fields: [dependsOnId], references: [id], onDelete: Cascade)
+  item        Item     @relation("ItemDependencies", fields: [itemId], references: [id], onDelete: Cascade)
 
   @@unique([itemId, dependsOnId, type])
   @@index([itemId])
@@ -527,24 +492,23 @@ model ItemDependency {
 }
 
 model RecurringTask {
-  id              String   @id @default(cuid())
-  boardId         String
-  groupId         String
-  itemTemplate    Json     // Template for creating items
-  frequency       String   // 'daily', 'weekly', 'monthly', 'custom'
-  interval        Int      @default(1) // Every N days/weeks/months
-  daysOfWeek      Int[]    @default([]) // For weekly: 0=Sun, 1=Mon, etc.
-  dayOfMonth      Int?     // For monthly: 1-31
-  startDate       DateTime
-  endDate         DateTime?
-  nextRunDate     DateTime
-  lastRunDate     DateTime?
-  isActive        Boolean  @default(true)
-  createdById     String
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  board           Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  id           String    @id @default(cuid())
+  boardId      String
+  groupId      String
+  itemTemplate Json
+  frequency    String
+  interval     Int       @default(1)
+  daysOfWeek   Int[]     @default([])
+  dayOfMonth   Int?
+  startDate    DateTime
+  endDate      DateTime?
+  nextRunDate  DateTime
+  lastRunDate  DateTime?
+  isActive     Boolean   @default(true)
+  createdById  String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  board        Board     @relation(fields: [boardId], references: [id], onDelete: Cascade)
 
   @@index([boardId])
   @@index([nextRunDate])
@@ -553,21 +517,20 @@ model RecurringTask {
 }
 
 model ActivityLog {
-  id            String   @id @default(cuid())
-  userId        String?
+  id             String   @id @default(cuid())
+  userId         String?
   organizationId String
-  boardId       String?
-  itemId        String?
-  action        String   // 'create', 'update', 'delete', 'view', 'export'
-  entityType    String   // 'board', 'item', 'column', 'user', 'group'
-  entityId      String?
-  changes       Json?    // Before/after data for updates
-  ipAddress     String?
-  userAgent     String?
-  metadata      Json?    // Additional context
-  createdAt     DateTime @default(now())
-
-  user          User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  boardId        String?
+  itemId         String?
+  action         String
+  entityType     String
+  entityId       String?
+  changes        Json?
+  ipAddress      String?
+  userAgent      String?
+  metadata       Json?
+  createdAt      DateTime @default(now())
+  user           User?    @relation(fields: [userId], references: [id])
 
   @@index([userId])
   @@index([organizationId])
@@ -580,14 +543,13 @@ model ActivityLog {
 }
 
 model Whiteboard {
-  id             String   @id @default(cuid())
+  id             String       @id @default(cuid())
   name           String
-  content        Json     @default("{}")
+  content        Json         @default("{}")
   organizationId String
   createdById    String
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
@@ -596,7 +558,7 @@ model Whiteboard {
 }
 
 model Document {
-  id             String   @id @default(cuid())
+  id             String            @id @default(cuid())
   name           String
   filepath       String
   mimeType       String
@@ -604,13 +566,12 @@ model Document {
   folderId       String?
   organizationId String
   createdById    String
-  version        Int      @default(1)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  
-  folder         Folder?           @relation(fields: [folderId], references: [id], onDelete: SetNull)
-  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  version        Int               @default(1)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
   versions       DocumentVersion[]
+  folder         Folder?           @relation(fields: [folderId], references: [id])
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
   @@index([folderId])
@@ -619,16 +580,15 @@ model Document {
 }
 
 model Folder {
-  id             String   @id @default(cuid())
+  id             String       @id @default(cuid())
   name           String
   parentId       String?
   organizationId String
-  createdAt      DateTime @default(now())
-  
-  parent         Folder?      @relation("FolderHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
-  children       Folder[]     @relation("FolderHierarchy")
+  createdAt      DateTime     @default(now())
   documents      Document[]
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  parent         Folder?      @relation("FolderHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children       Folder[]     @relation("FolderHierarchy")
 
   @@index([organizationId])
   @@index([parentId])
@@ -636,17 +596,15 @@ model Folder {
 }
 
 model DocumentVersion {
-  id           String   @id @default(cuid())
-  documentId   String
-  version      Int
-  filepath     String
-  size         Int
-  createdById  String
-  createdAt    DateTime @default(now())
-  
-  document     Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  id          String   @id @default(cuid())
+  documentId  String
+  version     Int
+  filepath    String
+  size        Int
+  createdById String
+  createdAt   DateTime @default(now())
+  document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
 
   @@index([documentId])
   @@map("document_versions")
 }
-

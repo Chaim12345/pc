@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useToast } from '../contexts/ToastContext'
 import { api } from '../services/api'
 import TipTapEditor from '../components/TipTapEditor'
 import VibeButton from '../components/VibeButton'
+import { useSocket } from '../contexts/SocketContext'
+import CollaborativePresence from '../components/CollaborativePresence'
 
 interface Workdoc {
   id: string
@@ -27,11 +29,18 @@ export default function WorkdocEditor() {
   const navigate = useNavigate()
   const { showToast } = useToast()
   const queryClient = useQueryClient()
+  const socket = useSocket()
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [isEditingTitle, setIsEditingTitle] = useState(false)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const [saveTimeout, setSaveTimeout] = useState<NodeJS.Timeout | null>(null)
+  const [showCoverImage, setShowCoverImage] = useState(false)
+  const [coverImageUrl, setCoverImageUrl] = useState('')
+  const [emoji, setEmoji] = useState('📄')
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+  const [collaborators, setCollaborators] = useState<any[]>([])
+  const titleInputRef = useRef<HTMLInputElement>(null)
 
   const { data: workdoc, isLoading } = useQuery<Workdoc>({
     queryKey: ['workdoc', workdocId],
@@ -49,6 +58,37 @@ export default function WorkdocEditor() {
       setHasUnsavedChanges(false)
     }
   }, [workdoc])
+
+  // Socket connection for collaborative features
+  useEffect(() => {
+    if (!socket || !workdocId) return
+
+    // Join workdoc room
+    socket.emit('join-workdoc', { workdocId })
+
+    // Listen for collaborator updates
+    socket.on('collaborator-joined', (user: any) => {
+      setCollaborators(prev => [...prev.filter(c => c.id !== user.id), user])
+    })
+
+    socket.on('collaborator-left', (userId: string) => {
+      setCollaborators(prev => prev.filter(c => c.id !== userId))
+    })
+
+    socket.on('workdoc-updated', (data: any) => {
+      if (data.userId !== socket.id) {
+        // Update from another user
+        queryClient.invalidateQueries({ queryKey: ['workdoc', workdocId] })
+      }
+    })
+
+    return () => {
+      socket.emit('leave-workdoc', { workdocId })
+      socket.off('collaborator-joined')
+      socket.off('collaborator-left')
+      socket.off('workdoc-updated')
+    }
+  }, [socket, workdocId])
 
   const updateMutation = useMutation({
     mutationFn: async (data: { title?: string; content?: string }) => {
@@ -177,8 +217,11 @@ export default function WorkdocEditor() {
               </svg>
             </button>
 
-            {/* User Avatar */}
+            {/* Collaborative Presence */}
             <div className="flex items-center space-x-2 pl-2 border-l border-[var(--vibe-border-light)]">
+              {collaborators.length > 0 && (
+                <CollaborativePresence collaborators={collaborators} />
+              )}
               <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[var(--vibe-primary)] to-[var(--vibe-primary-selected)] flex items-center justify-center text-white text-xs font-semibold">
                 {workdoc.creator.name.charAt(0).toUpperCase()}
               </div>

@@ -155,10 +155,225 @@ code {
   animation: zoom-in 0.2s ease-out;
 }
 
-/* Focus styles */
+/* ==================== ACCESSIBILITY ENHANCEMENTS ==================== */
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --vibe-primary: #0073ea;
+    --vibe-text-primary: #000000;
+    --vibe-text-secondary: #323338;
+    --vibe-bg-primary: #ffffff;
+    --vibe-bg-secondary: #f7f7f7;
+    --vibe-border: #000000;
+  }
+
+  .dark {
+    --vibe-primary: #5ea3ff;
+    --vibe-text-primary: #ffffff;
+    --vibe-text-secondary: #e6e9ef;
+    --vibe-bg-primary: #000000;
+    --vibe-bg-secondary: #1a1a1a;
+    --vibe-border: #ffffff;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Focus styles with better visibility */
 *:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px #FF3D57, 0 0 0 4px rgba(255, 61, 87, 0.1);
+  outline: 3px solid var(--vibe-primary);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(0, 115, 234, 0.2);
+  z-index: 999;
+}
+
+/* Skip to main content link */
+.skip-to-main {
+  position: absolute;
+  left: -9999px;
+  z-index: 999;
+  padding: 1em;
+  background-color: var(--vibe-bg-primary);
+  color: var(--vibe-text-primary);
+  text-decoration: none;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.skip-to-main:focus {
+  left: 50%;
+  top: 20px;
+  transform: translateX(-50%);
+}
+
+/* Screen reader only text */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Keyboard navigation indicators */
+.keyboard-navigating *:focus {
+  outline: 3px solid var(--vibe-primary) !important;
+  outline-offset: 2px !important;
+}
+
+/* Accessible button states */
+button:disabled,
+[role="button"][aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Interactive element minimum sizes for touch targets */
+button,
+a,
+[role="button"],
+[role="link"],
+input[type="checkbox"],
+input[type="radio"] {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Ensure text remains visible during font load */
+@font-face {
+  font-display: swap;
+}
+
+/* High contrast borders for form elements */
+input,
+textarea,
+select {
+  border: 1px solid var(--vibe-border, #c5c7d0);
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--vibe-primary);
+  box-shadow: 0 0 0 3px rgba(0, 115, 234, 0.2);
+}
+
+/* Error state styling for accessibility */
+.error,
+[aria-invalid="true"] {
+  border-color: #d83a52 !important;
+  background-color: rgba(216, 58, 82, 0.05);
+}
+
+.error-message,
+[role="alert"] {
+  color: #d83a52;
+  font-weight: 500;
+  margin-top: 4px;
+  font-size: 0.875rem;
+}
+
+/* Success state styling */
+.success {
+  border-color: #00c875 !important;
+  background-color: rgba(0, 200, 117, 0.05);
+}
+
+/* Loading state announcements */
+[aria-busy="true"]::after {
+  content: " (Loading...)";
+  font-style: italic;
+  color: var(--vibe-text-secondary);
+}
+
+/* Tooltips with proper ARIA */
+[role="tooltip"] {
+  position: absolute;
+  z-index: 9999;
+  background: var(--vibe-bg-primary);
+  color: var(--vibe-text-primary);
+  padding: 8px 12px;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  font-size: 0.875rem;
+  max-width: 300px;
+}
+
+/* Ensure sufficient color contrast */
+.text-contrast-high {
+  color: var(--vibe-text-primary) !important;
+}
+
+.text-contrast-medium {
+  color: var(--vibe-text-secondary) !important;
+}
+
+/* Link underlines for better visibility */
+a:not(.no-underline) {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+a:hover:not(.no-underline) {
+  text-decoration-thickness: 2px;
+}
+
+/* Ensure modals trap focus */
+[role="dialog"],
+[role="alertdialog"] {
+  position: fixed;
+  z-index: 9999;
+}
+
+/* Live regions for screen reader announcements */
+[aria-live="polite"],
+[aria-live="assertive"] {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+/* Ensure interactive elements are distinguishable */
+[tabindex]:not([tabindex="-1"]) {
+  cursor: pointer;
+}
+
+/* Progress indicators */
+[role="progressbar"] {
+  position: relative;
+  height: 4px;
+  background: var(--vibe-bg-secondary);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+[role="progressbar"]::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: var(--vibe-primary);
+  width: var(--progress-value, 0%);
+  transition: width 0.3s ease;
 }
 
 /* Remove autofill background */
@@ -176,4 +391,86 @@ input:-webkit-autofill:active {
 .dark input:-webkit-autofill:active {
   -webkit-box-shadow: 0 0 0 30px #292A31 inset !important;
   -webkit-text-fill-color: #ffffff !important;
+}
+
+/* ==================== TIPTAP EDITOR STYLES ==================== */
+
+/* Ensure proper text color in TipTap editor */
+.ProseMirror {
+  color: var(--vibe-primary-text);
+  caret-color: var(--vibe-primary);
+  outline: none;
+  min-height: 300px;
+  padding: 1rem;
+}
+
+/* Dark mode specific styles for TipTap */
+[data-theme="dark"] .ProseMirror {
+  color: #ffffff;
+  caret-color: #60a5fa;
+}
+
+/* Ensure all text elements have proper contrast */
+[data-theme="dark"] .ProseMirror p,
+[data-theme="dark"] .ProseMirror h1,
+[data-theme="dark"] .ProseMirror h2,
+[data-theme="dark"] .ProseMirror h3,
+[data-theme="dark"] .ProseMirror h4,
+[data-theme="dark"] .ProseMirror h5,
+[data-theme="dark"] .ProseMirror h6,
+[data-theme="dark"] .ProseMirror li,
+[data-theme="dark"] .ProseMirror blockquote {
+  color: #ffffff;
+}
+
+/* Code blocks in dark mode */
+[data-theme="dark"] .ProseMirror pre {
+  background-color: #1a1b22;
+  border: 1px solid var(--vibe-border-light);
+}
+
+[data-theme="dark"] .ProseMirror code {
+  background-color: #2a2b35;
+  color: #60a5fa;
+}
+
+/* Links in dark mode */
+[data-theme="dark"] .ProseMirror a {
+  color: #60a5fa;
+}
+
+/* Placeholder text */
+.ProseMirror p.is-editor-empty:first-child::before {
+  color: var(--vibe-placeholder-text);
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+/* ==================== COMMENT STYLES ==================== */
+
+/* Fix comment text visibility in dark mode */
+[data-theme="dark"] .comment-text,
+[data-theme="dark"] .comment-content {
+  color: #e5e7eb !important;
+}
+
+/* Comment panel background */
+[data-theme="dark"] .comment-panel {
+  background-color: var(--vibe-bg-secondary);
+  color: #ffffff;
+}
+
+/* Comment input fields */
+[data-theme="dark"] textarea.comment-input,
+[data-theme="dark"] input.comment-input {
+  background-color: var(--vibe-bg-primary);
+  color: #ffffff;
+  border-color: var(--vibe-border-light);
+}
+
+[data-theme="dark"] textarea.comment-input::placeholder,
+[data-theme="dark"] input.comment-input::placeholder {
+  color: var(--vibe-placeholder-text);
 }

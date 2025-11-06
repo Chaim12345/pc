@@ -120,20 +120,33 @@
 
 /* ===== DARK MODE VARIABLES ===== */
 [data-theme="dark"] {
+  /* Enhanced contrast for better readability */
   --vibe-primary-text: #ffffff;
-  --vibe-secondary-text: #b4b6c1;
-  --vibe-placeholder-text: #8b8d9a;
-  --vibe-disabled-text: #5a5d70;
+  --vibe-secondary-text: #d1d3db; /* Increased contrast from #b4b6c1 */
+  --vibe-placeholder-text: #9ca3af; /* Increased contrast from #8b8d9a */
+  --vibe-disabled-text: #6b7280; /* Increased contrast from #5a5d70 */
+  --vibe-icon-color: #9ca3af;
+  --vibe-link-color: #60a5fa; /* Brighter blue for dark mode */
   
-  --vibe-bg-primary: #181b34;
-  --vibe-bg-secondary: #1f2244;
-  --vibe-bg-tertiary: #252847;
-  --vibe-bg-hover: #2b2f50;
-  --vibe-bg-selected: #323658;
+  /* Adjusted backgrounds for better contrast */
+  --vibe-bg-primary: #1a1b22; /* Slightly lighter than #181b34 */
+  --vibe-bg-secondary: #22232b; /* Adjusted from #1f2244 */
+  --vibe-bg-tertiary: #2a2b35; /* Adjusted from #252847 */
+  --vibe-bg-hover: #32333e; /* Adjusted from #2b2f50 */
+  --vibe-bg-selected: #3a3b48; /* Adjusted from #323658 */
+  --vibe-bg-disabled: #2a2b35;
   
-  --vibe-border-light: #30325e;
-  --vibe-border-medium: #434669;
-  --vibe-border-strong: #565976;
+  /* Better border visibility */
+  --vibe-border-light: #3f4049; /* Increased contrast from #30325e */
+  --vibe-border-medium: #52535f; /* Increased contrast from #434669 */
+  --vibe-border-strong: #6b6c7a; /* Increased contrast from #565976 */
+  --vibe-border-ui: #52535f;
+  
+  /* Status colors adjusted for dark mode */
+  --vibe-positive-light: #064e3b;
+  --vibe-negative-light: #7f1d1d;
+  --vibe-warning-light: #78350f;
+  --vibe-info-light: #1e3a8a;
 }
 
 /* ===== GLOBAL STYLES ===== */
