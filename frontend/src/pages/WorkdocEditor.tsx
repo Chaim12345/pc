@@ -61,7 +61,8 @@ export default function WorkdocEditor() {
 
   // Socket connection for collaborative features
   useEffect(() => {
-    if (!socket || !workdocId) return
+    // Check if socket exists and has emit method
+    if (!socket || typeof socket.emit !== 'function' || !workdocId) return
 
     // Join workdoc room
     socket.emit('join-workdoc', { workdocId })
@@ -83,12 +84,14 @@ export default function WorkdocEditor() {
     })
 
     return () => {
-      socket.emit('leave-workdoc', { workdocId })
-      socket.off('collaborator-joined')
-      socket.off('collaborator-left')
-      socket.off('workdoc-updated')
+      if (socket && typeof socket.emit === 'function') {
+        socket.emit('leave-workdoc', { workdocId })
+        socket.off('collaborator-joined')
+        socket.off('collaborator-left')
+        socket.off('workdoc-updated')
+      }
     }
-  }, [socket, workdocId])
+  }, [socket, workdocId, queryClient])
 
   const updateMutation = useMutation({
     mutationFn: async (data: { title?: string; content?: string }) => {
