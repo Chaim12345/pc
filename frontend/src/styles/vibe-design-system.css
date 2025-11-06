@@ -120,33 +120,33 @@
 
 /* ===== DARK MODE VARIABLES ===== */
 [data-theme="dark"] {
-  /* Enhanced contrast for better readability */
-  --vibe-primary-text: #ffffff;
-  --vibe-secondary-text: #d1d3db; /* Increased contrast from #b4b6c1 */
-  --vibe-placeholder-text: #9ca3af; /* Increased contrast from #8b8d9a */
-  --vibe-disabled-text: #6b7280; /* Increased contrast from #5a5d70 */
-  --vibe-icon-color: #9ca3af;
-  --vibe-link-color: #60a5fa; /* Brighter blue for dark mode */
+  /* Maximum contrast for readability */
+  --vibe-primary-text: #ffffff; /* Pure white */
+  --vibe-secondary-text: #e5e7eb; /* Very light gray */
+  --vibe-placeholder-text: #a1a1aa; /* Medium gray */
+  --vibe-disabled-text: #71717a; /* Darker gray */
+  --vibe-icon-color: #d4d4d8;
+  --vibe-link-color: #60a5fa; /* Bright blue */
   
-  /* Adjusted backgrounds for better contrast */
-  --vibe-bg-primary: #1a1b22; /* Slightly lighter than #181b34 */
-  --vibe-bg-secondary: #22232b; /* Adjusted from #1f2244 */
-  --vibe-bg-tertiary: #2a2b35; /* Adjusted from #252847 */
-  --vibe-bg-hover: #32333e; /* Adjusted from #2b2f50 */
-  --vibe-bg-selected: #3a3b48; /* Adjusted from #323658 */
-  --vibe-bg-disabled: #2a2b35;
+  /* Darker backgrounds for better contrast with white text */
+  --vibe-bg-primary: #0f0f11; /* Very dark */
+  --vibe-bg-secondary: #18181b; /* Slightly lighter */
+  --vibe-bg-tertiary: #27272a; /* Card backgrounds */
+  --vibe-bg-hover: #3f3f46; /* Hover states */
+  --vibe-bg-selected: #52525b; /* Selected items */
+  --vibe-bg-disabled: #27272a;
   
-  /* Better border visibility */
-  --vibe-border-light: #3f4049; /* Increased contrast from #30325e */
-  --vibe-border-medium: #52535f; /* Increased contrast from #434669 */
-  --vibe-border-strong: #6b6c7a; /* Increased contrast from #565976 */
-  --vibe-border-ui: #52535f;
+  /* Clearer borders */
+  --vibe-border-light: #3f3f46;
+  --vibe-border-medium: #52525b;
+  --vibe-border-strong: #71717a;
+  --vibe-border-ui: #52525b;
   
-  /* Status colors adjusted for dark mode */
-  --vibe-positive-light: #064e3b;
-  --vibe-negative-light: #7f1d1d;
-  --vibe-warning-light: #78350f;
-  --vibe-info-light: #1e3a8a;
+  /* Status colors with better contrast */
+  --vibe-positive-light: #10b981;
+  --vibe-negative-light: #ef4444;
+  --vibe-warning-light: #f59e0b;
+  --vibe-info-light: #3b82f6;
 }
 
 /* ===== GLOBAL STYLES ===== */

@@ -450,27 +450,46 @@ input:-webkit-autofill:active {
 
 /* ==================== COMMENT STYLES ==================== */
 
-/* Fix comment text visibility in dark mode */
+/* Fix comment text visibility in dark mode - HIGH CONTRAST */
 [data-theme="dark"] .comment-text,
-[data-theme="dark"] .comment-content {
-  color: #e5e7eb !important;
+[data-theme="dark"] .comment-content,
+[data-theme="dark"] [class*="comment"] p,
+[data-theme="dark"] [class*="comment"] span {
+  color: #ffffff !important; /* Pure white for maximum contrast */
 }
 
 /* Comment panel background */
 [data-theme="dark"] .comment-panel {
   background-color: var(--vibe-bg-secondary);
-  color: #ffffff;
+  color: #ffffff !important;
 }
 
 /* Comment input fields */
 [data-theme="dark"] textarea.comment-input,
-[data-theme="dark"] input.comment-input {
-  background-color: var(--vibe-bg-primary);
-  color: #ffffff;
-  border-color: var(--vibe-border-light);
+[data-theme="dark"] input.comment-input,
+[data-theme="dark"] textarea,
+[data-theme="dark"] input[type="text"] {
+  background-color: #1a1b22 !important;
+  color: #ffffff !important;
+  border-color: #52535f !important;
 }
 
-[data-theme="dark"] textarea.comment-input::placeholder,
-[data-theme="dark"] input.comment-input::placeholder {
-  color: var(--vibe-placeholder-text);
+[data-theme="dark"] textarea::placeholder,
+[data-theme="dark"] input::placeholder {
+  color: #9ca3af !important;
+}
+
+/* Ensure ALL text in dark mode has proper contrast */
+[data-theme="dark"] * {
+  color: #ffffff;
+}
+
+[data-theme="dark"] .text-gray-500,
+[data-theme="dark"] .text-gray-600,
+[data-theme="dark"] .text-gray-700 {
+  color: #d1d5db !important; /* Light gray for secondary text */
+}
+
+[data-theme="dark"] .text-gray-400 {
+  color: #9ca3af !important;
 }
