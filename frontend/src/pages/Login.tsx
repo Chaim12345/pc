@@ -52,8 +52,16 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex bg-[#f6f7fb]">
+      {/* Skip to main content link for accessibility */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-[#0073ea] text-white px-4 py-2 rounded-lg z-50"
+      >
+        Skip to main content
+      </a>
+
       {/* Left Panel - Login Form */}
-      <div className="flex-1 flex items-center justify-center px-8 py-12">
+      <main id="main-content" className="flex-1 flex items-center justify-center px-8 py-12" role="main">
         <div className="w-full max-w-md">
           {/* Logo and Brand */}
           <div className="text-center mb-8">
@@ -71,8 +79,12 @@ export default function Login() {
             {!twoFactorRequired ? (
               <form onSubmit={handleSubmit} className="space-y-6">
                 {error && (
-                  <div className="bg-[#ffe5e9] border border-[#e2445c] text-[#d83a52] px-4 py-3 rounded-lg flex items-start text-sm">
-                    <svg className="w-5 h-5 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                  <div
+                    className="bg-[#ffe5e9] border border-[#e2445c] text-[#d83a52] px-4 py-3 rounded-lg flex items-start text-sm"
+                    role="alert"
+                    aria-live="assertive"
+                  >
+                    <svg className="w-5 h-5 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                     </svg>
                     <span>{error}</span>
@@ -129,6 +141,8 @@ export default function Login() {
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       className="absolute right-4 top-1/2 -translate-y-1/2 text-[#9699a6] hover:text-[#323338] transition-colors"
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                      aria-pressed={showPassword}
                     >
                       {showPassword ? (
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -192,8 +206,12 @@ export default function Login() {
                 </div>
                 
                 {error && (
-                  <div className="bg-[#ffe5e9] border border-[#e2445c] text-[#d83a52] px-4 py-3 rounded-lg flex items-start text-sm">
-                    <svg className="w-5 h-5 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                  <div
+                    className="bg-[#ffe5e9] border border-[#e2445c] text-[#d83a52] px-4 py-3 rounded-lg flex items-start text-sm"
+                    role="alert"
+                    aria-live="assertive"
+                  >
+                    <svg className="w-5 h-5 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                     </svg>
                     <span>{error}</span>
@@ -264,8 +282,11 @@ export default function Login() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
-                  <button className="flex items-center justify-center px-4 py-2.5 border border-[#e6e9ef] rounded-lg text-sm font-medium text-[#323338] hover:bg-[#f6f7fb] transition-all">
-                    <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
+                  <button
+                    className="flex items-center justify-center px-4 py-2.5 border border-[#e6e9ef] rounded-lg text-sm font-medium text-[#323338] hover:bg-[#f6f7fb] transition-all"
+                    aria-label="Continue with Google"
+                  >
+                    <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" aria-hidden="true">
                       <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                       <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
                       <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
@@ -273,8 +294,11 @@ export default function Login() {
                     </svg>
                     Google
                   </button>
-                  <button className="flex items-center justify-center px-4 py-2.5 border border-[#e6e9ef] rounded-lg text-sm font-medium text-[#323338] hover:bg-[#f6f7fb] transition-all">
-                    <svg className="w-5 h-5 mr-2" fill="#1877F2" viewBox="0 0 24 24">
+                  <button
+                    className="flex items-center justify-center px-4 py-2.5 border border-[#e6e9ef] rounded-lg text-sm font-medium text-[#323338] hover:bg-[#f6f7fb] transition-all"
+                    aria-label="Continue with Microsoft"
+                  >
+                    <svg className="w-5 h-5 mr-2" fill="#1877F2" viewBox="0 0 24 24" aria-hidden="true">
                       <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
                     </svg>
                     Microsoft
@@ -294,7 +318,7 @@ export default function Login() {
       </div>
 
       {/* Right Panel - Feature Showcase */}
-      <div className="hidden lg:flex flex-1 bg-gradient-to-br from-[#0073ea] to-[#0050a0] items-center justify-center px-8 py-12">
+      <aside className="hidden lg:flex flex-1 bg-gradient-to-br from-[#0073ea] to-[#0050a0] items-center justify-center px-8 py-12" role="complementary" aria-label="Features showcase">
         <div className="max-w-lg">
           <h2 className="text-4xl font-bold text-white mb-6">
             Work OS that powers teams to run processes, projects and workflows
