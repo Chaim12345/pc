@@ -456,38 +456,45 @@ export default function KanbanView({ board }: KanbanViewProps) {
       // Snapshot the previous value
       const previousBoard = queryClient.getQueryData<Board>(['board', board.id])
 
-      // Optimistically update the board data
+      // Optimistically update the board data with proper deep copy
       if (previousBoard) {
-        const updatedBoard = { ...previousBoard }
-        
-        // Find and update the item's column value
-        updatedBoard.groups?.forEach((group) => {
-          group.items?.forEach((item) => {
-            if (item.id === itemId) {
-              const columnValueIndex = item.columnValues?.findIndex((cv) => cv.columnId === columnId) ?? -1
-              
-              if (columnValueIndex >= 0 && item.columnValues) {
-                // Update existing column value
-                item.columnValues[columnValueIndex] = {
-                  ...item.columnValues[columnValueIndex],
-                  value,
+        // Create deep copy of board structure
+        const updatedBoard: Board = {
+          ...previousBoard,
+          groups: previousBoard.groups?.map((group) => ({
+            ...group,
+            items: group.items?.map((item) => {
+              if (item.id === itemId) {
+                const columnValueIndex = item.columnValues?.findIndex((cv) => cv.columnId === columnId) ?? -1
+                
+                let updatedColumnValues: any[]
+                if (columnValueIndex >= 0 && item.columnValues) {
+                  // Update existing column value
+                  updatedColumnValues = [...item.columnValues]
+                  updatedColumnValues[columnValueIndex] = {
+                    ...updatedColumnValues[columnValueIndex],
+                    value,
+                  }
+                } else if (item.columnValues) {
+                  // Add new column value
+                  updatedColumnValues = [
+                    ...item.columnValues,
+                    { columnId, value } as any
+                  ]
+                } else {
+                  // Initialize columnValues array
+                  updatedColumnValues = [{ columnId, value } as any]
                 }
-              } else if (item.columnValues) {
-                // Add new column value
-                item.columnValues.push({
-                  columnId,
-                  value,
-                } as any)
-              } else {
-                // Initialize columnValues array
-                item.columnValues = [{
-                  columnId,
-                  value,
-                } as any]
+
+                return {
+                  ...item,
+                  columnValues: updatedColumnValues,
+                }
               }
-            }
-          })
-        })
+              return item
+            }),
+          })),
+        }
 
         // Update the cache optimistically
         queryClient.setQueryData<Board>(['board', board.id], updatedBoard)
@@ -503,8 +510,12 @@ export default function KanbanView({ board }: KanbanViewProps) {
       showToast('Failed to move item', 'error')
     },
     onSuccess: () => {
-      // Refetch to ensure consistency, but don't show toast (already moved optimistically)
-      queryClient.invalidateQueries({ queryKey: ['board', board.id] })
+      // Silently refetch in background to ensure consistency
+      // Don't invalidate immediately to avoid flicker - let optimistic update stay
+      queryClient.invalidateQueries({ 
+        queryKey: ['board', board.id],
+        refetchType: 'none' // Don't refetch immediately, just mark as stale
+      })
       if (socket) {
         socket.emit(SocketEvent.COLUMN_UPDATED, { boardId: board.id })
       }
