@@ -1,6 +1,8 @@
 import { Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth';
+import { notificationService } from '../services/notificationService';
+import { parseMentions, findUsersFromMentions } from '../utils/mentionParser';
 
 const prisma = new PrismaClient();
 
@@ -52,13 +54,50 @@ export const commentController = {
       const { itemId, text, parentId, mentions } = req.body;
       const userId = req.userId!;
 
+      // Get item and user info for notifications
+      const item = await prisma.item.findUnique({
+        where: { id: itemId },
+        include: {
+          board: {
+            include: {
+              organization: true,
+            },
+          },
+        },
+      });
+
+      const commenter = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true, name: true, email: true },
+      });
+
+      if (!item || !commenter) {
+        return res.status(404).json({ success: false, error: 'Item or user not found' });
+      }
+
+      // Parse mentions from text if not provided
+      let mentionUserIds: string[] = [];
+      if (mentions && mentions.length > 0) {
+        mentionUserIds = mentions;
+      } else {
+        // Parse mentions from text
+        const parsedMentions = parseMentions(text);
+        if (parsedMentions.length > 0 && item.board.organizationId) {
+          mentionUserIds = await findUsersFromMentions(
+            parsedMentions,
+            item.board.organizationId,
+            prisma
+          );
+        }
+      }
+
       const comment = await prisma.comment.create({
         data: {
           itemId,
           userId,
           text,
           parentId,
-          mentions: mentions || []
+          mentions: mentionUserIds
         },
         include: {
           user: {
@@ -71,6 +110,80 @@ export const commentController = {
           }
         }
       });
+
+      // Send notifications for mentions
+      if (mentionUserIds.length > 0) {
+        for (const mentionedUserId of mentionUserIds) {
+          // Don't notify the commenter themselves
+          if (mentionedUserId !== userId) {
+            try {
+              await notificationService.notifyMention(
+                mentionedUserId,
+                commenter.name,
+                itemId,
+                item.name,
+                item.boardId
+              );
+            } catch (error) {
+              console.error('Failed to send mention notification:', error);
+            }
+          }
+        }
+      }
+
+      // Send notification to item assignees (if any)
+      // Get all PERSON column values for this item
+      const personColumns = await prisma.column.findMany({
+        where: {
+          boardId: item.boardId,
+          type: 'PEOPLE',
+        },
+      });
+
+      if (personColumns.length > 0) {
+        const assigneeUserIds = new Set<string>();
+        
+        for (const column of personColumns) {
+          const columnValue = await prisma.columnValue.findUnique({
+            where: {
+              itemId_columnId: {
+                itemId,
+                columnId: column.id,
+              },
+            },
+          });
+
+          if (columnValue?.value) {
+            const assignees = Array.isArray(columnValue.value) 
+              ? columnValue.value 
+              : [columnValue.value];
+            
+            for (const assignee of assignees) {
+              if (assignee?.id && assignee.id !== userId) {
+                assigneeUserIds.add(assignee.id);
+              }
+            }
+          }
+        }
+
+        // Notify assignees about the comment
+        for (const assigneeId of assigneeUserIds) {
+          // Don't notify if they were already mentioned
+          if (!mentionUserIds.includes(assigneeId)) {
+            try {
+              await notificationService.notifyComment(
+                assigneeId,
+                commenter.name,
+                itemId,
+                item.name,
+                item.boardId
+              );
+            } catch (error) {
+              console.error('Failed to send comment notification:', error);
+            }
+          }
+        }
+      }
 
       res.status(201).json({ success: true, data: comment });
     } catch (error: any) {

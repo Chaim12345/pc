@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
 import { api } from '../services/api'
 import { useSocket } from '../contexts/SocketContext'
 import { useToast } from '../contexts/ToastContext'
@@ -22,6 +23,7 @@ export default function NotificationCenter() {
   const { socket } = useSocket()
   const { showToast } = useToast()
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
 
   // Fetch notifications
   const { data: notificationsData } = useQuery({
@@ -252,8 +254,11 @@ export default function NotificationCenter() {
                       if (!notification.read) {
                         markAsReadMutation.mutate(notification.id)
                       }
-                      if (notification.link) {
-                        window.location.href = notification.link
+                      // Use link from metadata if available
+                      const link = notification.metadata?.link || notification.link
+                      if (link) {
+                        setIsOpen(false)
+                        navigate(link)
                       }
                     }}
                   >

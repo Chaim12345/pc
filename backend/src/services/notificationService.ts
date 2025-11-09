@@ -18,13 +18,33 @@ export class NotificationService {
     metadata?: any
   ) {
     try {
+      // Build link from metadata
+      let link: string | undefined;
+      if (metadata?.itemId && metadata?.boardId) {
+        link = `/board/${metadata.boardId}?item=${metadata.itemId}`;
+      } else if (metadata?.itemId) {
+        // Try to get boardId from item
+        const item = await prisma.item.findUnique({
+          where: { id: metadata.itemId },
+          select: { boardId: true },
+        });
+        if (item) {
+          link = `/board/${item.boardId}?item=${metadata.itemId}`;
+        }
+      } else if (metadata?.boardId) {
+        link = `/board/${metadata.boardId}`;
+      }
+
       const notification = await prisma.notification.create({
         data: {
           userId,
           type,
           title,
           message,
-          metadata: metadata || {},
+          metadata: {
+            ...metadata,
+            link,
+          },
         },
       });
 
@@ -41,35 +61,35 @@ export class NotificationService {
   }
 
   // Create notification for item mention
-  async notifyMention(mentionedUserId: string, mentionerName: string, itemId: string, itemName: string) {
+  async notifyMention(mentionedUserId: string, mentionerName: string, itemId: string, itemName: string, boardId?: string) {
     return this.createNotification(
       mentionedUserId,
       'mention',
       'You were mentioned',
       `${mentionerName} mentioned you in "${itemName}"`,
-      { itemId, itemName }
+      { itemId, itemName, boardId }
     );
   }
 
   // Create notification for comment
-  async notifyComment(userId: string, commenterName: string, itemId: string, itemName: string) {
+  async notifyComment(userId: string, commenterName: string, itemId: string, itemName: string, boardId?: string) {
     return this.createNotification(
       userId,
       'comment',
       'New comment',
       `${commenterName} commented on "${itemName}"`,
-      { itemId, itemName }
+      { itemId, itemName, boardId }
     );
   }
 
   // Create notification for assignment
-  async notifyAssignment(userId: string, assignerName: string, itemId: string, itemName: string) {
+  async notifyAssignment(userId: string, assignerName: string, itemId: string, itemName: string, boardId?: string) {
     return this.createNotification(
       userId,
       'assignment',
       'You were assigned',
       `${assignerName} assigned you to "${itemName}"`,
-      { itemId, itemName }
+      { itemId, itemName, boardId }
     );
   }
 
@@ -79,14 +99,15 @@ export class NotificationService {
     itemId: string,
     itemName: string,
     oldStatus: string,
-    newStatus: string
+    newStatus: string,
+    boardId?: string
   ) {
     return this.createNotification(
       userId,
       'status_change',
       'Status changed',
       `"${itemName}" status changed from ${oldStatus} to ${newStatus}`,
-      { itemId, itemName, oldStatus, newStatus }
+      { itemId, itemName, oldStatus, newStatus, boardId }
     );
   }
 
