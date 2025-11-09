@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Item } from '@monday-clone/shared'
 import { api } from '../services/api'
@@ -22,6 +22,76 @@ export default function ItemDetailModal({ itemId, boardId, isOpen, onClose }: It
   const [newColumnType, setNewColumnType] = useState('TEXT')
   const { showToast } = useToast()
   const queryClient = useQueryClient()
+  const modalRef = useRef<HTMLDivElement>(null)
+  const closeButtonRef = useRef<HTMLButtonElement>(null)
+  const previousActiveElementRef = useRef<HTMLElement | null>(null)
+  const titleId = `item-detail-title-${Math.random().toString(36).substr(2, 9)}`
+
+  // Focus management and trap
+  useEffect(() => {
+    if (!isOpen) return
+
+    // Store the previously focused element
+    previousActiveElementRef.current = document.activeElement as HTMLElement
+
+    // Focus the close button initially
+    const timer = setTimeout(() => {
+      closeButtonRef.current?.focus()
+    }, 0)
+
+    // Focus trap: keep focus within modal
+    const handleTabKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Tab') return
+
+      const modal = modalRef.current
+      if (!modal) return
+
+      const focusableElements = modal.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      )
+      const firstElement = focusableElements[0]
+      const lastElement = focusableElements[focusableElements.length - 1]
+
+      if (event.shiftKey) {
+        // Shift + Tab
+        if (document.activeElement === firstElement) {
+          event.preventDefault()
+          lastElement?.focus()
+        }
+      } else {
+        // Tab
+        if (document.activeElement === lastElement) {
+          event.preventDefault()
+          firstElement?.focus()
+        }
+      }
+    }
+
+    // Handle Escape key
+    const handleEsc = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !showAddColumn) {
+        onClose()
+      }
+    }
+
+    document.addEventListener('keydown', handleEsc)
+    document.addEventListener('keydown', handleTabKey)
+
+    // Prevent body scroll when modal is open
+    document.body.style.overflow = 'hidden'
+
+    return () => {
+      clearTimeout(timer)
+      document.removeEventListener('keydown', handleEsc)
+      document.removeEventListener('keydown', handleTabKey)
+      document.body.style.overflow = ''
+
+      // Restore focus to the previously focused element
+      if (previousActiveElementRef.current) {
+        previousActiveElementRef.current.focus()
+      }
+    }
+  }, [isOpen, onClose, showAddColumn])
 
   const { data: item, isLoading } = useQuery<Item>({
     queryKey: ['item', itemId],
@@ -129,8 +199,17 @@ export default function ItemDetailModal({ itemId, boardId, isOpen, onClose }: It
   ], [])
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-      <div className="bg-white dark:bg-monday-darkLight rounded-xl shadow-monday-hover w-full max-w-4xl max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-200">
+    <div 
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200"
+      role="presentation"
+    >
+      <div 
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        className="bg-white dark:bg-monday-darkLight rounded-xl shadow-monday-hover w-full max-w-4xl max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-200"
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b-2 border-monday-border dark:border-gray-700">
           <div className="flex items-center space-x-4 flex-1">
@@ -139,11 +218,13 @@ export default function ItemDetailModal({ itemId, boardId, isOpen, onClose }: It
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>
             </div>
-            <h2 className="text-2xl font-bold text-monday-text dark:text-white truncate">{item.name}</h2>
+            <h2 id={titleId} className="text-2xl font-bold text-monday-text dark:text-white truncate">{item.name}</h2>
           </div>
           <button 
-            onClick={onClose} 
-            className="w-8 h-8 flex items-center justify-center text-monday-textLight dark:text-gray-400 hover:text-monday-text dark:hover:text-white hover:bg-monday-background dark:hover:bg-gray-800 rounded-lg transition-colors flex-shrink-0"
+            ref={closeButtonRef}
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center text-monday-textLight dark:text-gray-400 hover:text-monday-text dark:hover:text-white hover:bg-monday-background dark:hover:bg-gray-800 rounded-lg transition-colors flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-monday-primary focus:ring-offset-2"
+            aria-label="Close item details"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -157,11 +238,13 @@ export default function ItemDetailModal({ itemId, boardId, isOpen, onClose }: It
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`flex items-center space-x-2 px-4 py-3 text-sm font-semibold transition-all relative ${
+              className={`flex items-center space-x-2 px-4 py-3 text-sm font-semibold transition-all relative focus:outline-none focus:ring-2 focus:ring-monday-primary focus:ring-offset-2 ${
                 activeTab === tab.id
                   ? 'text-monday-primary'
                   : 'text-monday-textLight dark:text-gray-400 hover:text-monday-text dark:hover:text-white'
               }`}
+              aria-selected={activeTab === tab.id}
+              role="tab"
             >
               {tab.icon}
               <span>{tab.label}</span>
@@ -258,10 +341,18 @@ export default function ItemDetailModal({ itemId, boardId, isOpen, onClose }: It
 
       {/* Add Column Modal */}
       {showAddColumn && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-monday-darkLight rounded-xl shadow-2xl max-w-md w-full p-6 animate-in slide-in-from-bottom-4 duration-300">
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center p-4 animate-in fade-in duration-200"
+          role="presentation"
+        >
+          <div 
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="add-column-title"
+            className="bg-white dark:bg-monday-darkLight rounded-xl shadow-2xl max-w-md w-full p-6 animate-in slide-in-from-bottom-4 duration-300"
+          >
             <div className="flex items-center justify-between mb-5">
-              <h3 className="text-xl font-bold text-monday-text dark:text-white flex items-center space-x-2">
+              <h3 id="add-column-title" className="text-xl font-bold text-monday-text dark:text-white flex items-center space-x-2">
                 <svg className="w-6 h-6 text-monday-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
                 </svg>
@@ -273,7 +364,8 @@ export default function ItemDetailModal({ itemId, boardId, isOpen, onClose }: It
                   setNewColumnTitle('')
                   setNewColumnType('TEXT')
                 }}
-                className="text-monday-textLight dark:text-gray-400 hover:text-monday-text dark:hover:text-white transition-colors"
+                className="text-monday-textLight dark:text-gray-400 hover:text-monday-text dark:hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-monday-primary focus:ring-offset-2 rounded"
+                aria-label="Close add column dialog"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

@@ -68,19 +68,25 @@ export default function FilterModal({ isOpen, onClose, columns, onApplyFilter }:
   ]
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-[var(--vibe-bg-primary)] rounded-2xl shadow-2xl w-full max-w-2xl transform transition-all">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" role="presentation">
+      <div 
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="filter-modal-title"
+        className="bg-[var(--vibe-bg-primary)] rounded-2xl shadow-2xl w-full max-w-2xl transform transition-all"
+      >
         <div className="border-b border-[var(--vibe-border-light)] px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-semibold text-[var(--vibe-primary-text)]">Filter Items</h2>
+              <h2 id="filter-modal-title" className="text-2xl font-semibold text-[var(--vibe-primary-text)]">Filter Items</h2>
               <p className="text-sm text-[var(--vibe-secondary-text)] mt-1">
                 Set up filter rules to show only specific items
               </p>
             </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-[var(--vibe-bg-hover)] rounded-lg transition-colors"
+              className="p-2 hover:bg-[var(--vibe-bg-hover)] rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--vibe-primary)] focus:ring-offset-2"
+              aria-label="Close filter dialog"
             >
               <svg className="w-5 h-5 text-[var(--vibe-secondary-text)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -137,7 +143,8 @@ export default function FilterModal({ isOpen, onClose, columns, onApplyFilter }:
                 {filterRules.length > 1 && (
                   <button
                     onClick={() => removeRule(rule.id)}
-                    className="p-2 hover:bg-[var(--vibe-negative-light)] hover:text-[var(--vibe-negative)] rounded-lg transition-colors"
+                    className="p-2 hover:bg-[var(--vibe-negative-light)] hover:text-[var(--vibe-negative)] rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--vibe-negative)] focus:ring-offset-2"
+                    aria-label={`Remove filter rule ${index + 1}`}
                     title="Remove rule"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -151,7 +158,8 @@ export default function FilterModal({ isOpen, onClose, columns, onApplyFilter }:
 
           <button
             onClick={addRule}
-            className="mt-4 flex items-center gap-2 px-4 py-2 text-[var(--vibe-primary)] hover:bg-[var(--vibe-bg-hover)] rounded-lg transition-colors font-medium"
+            className="mt-4 flex items-center gap-2 px-4 py-2 text-[var(--vibe-primary)] hover:bg-[var(--vibe-bg-hover)] rounded-lg transition-colors font-medium focus:outline-none focus:ring-2 focus:ring-[var(--vibe-primary)] focus:ring-offset-2"
+            aria-label="Add filter rule"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
