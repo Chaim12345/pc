@@ -6,6 +6,8 @@ import { SocketProvider } from './contexts/SocketContext'
 import { ToastProvider } from './contexts/ToastContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { PageProvider } from './contexts/PageContext'
+import ErrorBoundary from './components/ErrorBoundary'
+import SkipLinks from './components/SkipLinks'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -18,21 +20,24 @@ const queryClient = new QueryClient({
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <ThemeProvider>
-          <AuthProvider>
-            <SocketProvider>
-              <ToastProvider>
-                <PageProvider>
-                  <AppRoutes />
-                </PageProvider>
-              </ToastProvider>
-            </SocketProvider>
-          </AuthProvider>
-        </ThemeProvider>
-      </BrowserRouter>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <ThemeProvider>
+            <SkipLinks />
+            <AuthProvider>
+              <SocketProvider>
+                <ToastProvider>
+                  <PageProvider>
+                    <AppRoutes />
+                  </PageProvider>
+                </ToastProvider>
+              </SocketProvider>
+            </AuthProvider>
+          </ThemeProvider>
+        </BrowserRouter>
+      </QueryClientProvider>
+    </ErrorBoundary>
   )
 }
 
