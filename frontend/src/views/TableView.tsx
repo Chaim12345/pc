@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo, useCallback } from 'react'
 import { useMutation, useQueryClient, UseMutationResult } from '@tanstack/react-query'
 import { Board, Item, Column, Group, User, ColumnType } from '@monday-clone/shared'
 import { api } from '../services/api'
@@ -12,6 +12,7 @@ import PersonSelector from '../components/PersonSelector'
 import FileUploadColumn from '../components/FileUploadColumn'
 import ItemRow from '../components/ItemRow';
 import { SortRule } from '../components/SortModal'
+import { logger } from '../utils/logger'
 
 interface TableViewProps {
   board: Board
@@ -27,8 +28,8 @@ export default function TableView({ board, sortRules = [], onSortChange }: Table
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
   const [showAddItemModal, setShowAddItemModal] = useState<{ groupId: string; name: string } | null>(null)
 
-  // Handle column header click for sorting
-  const handleColumnSort = (columnId: string) => {
+  // Handle column header click for sorting - memoized
+  const handleColumnSort = useCallback((columnId: string) => {
     const existingRule = sortRules.find(rule => rule.columnId === columnId)
     let newRules: SortRule[] = []
 
@@ -49,7 +50,7 @@ export default function TableView({ board, sortRules = [], onSortChange }: Table
     }
 
     onSortChange?.(newRules)
-  }
+  }, [sortRules, onSortChange])
 
   // Get sort direction for a column
   const getSortDirection = (columnId: string): 'asc' | 'desc' | null => {
@@ -57,8 +58,8 @@ export default function TableView({ board, sortRules = [], onSortChange }: Table
     return rule ? rule.direction : null
   }
 
-  // Sort items based on sortRules
-  const sortItems = (items: Item[]): Item[] => {
+  // Sort items based on sortRules - memoized for performance
+  const sortItems = useCallback((items: Item[]): Item[] => {
     if (sortRules.length === 0) return items
 
     return [...items].sort((a, b) => {
@@ -99,7 +100,7 @@ export default function TableView({ board, sortRules = [], onSortChange }: Table
       }
       return 0
     })
-  }
+  }, [sortRules])
 
   const updateItemMutation = useMutation({
     mutationFn: async ({ itemId, updates }: { itemId: string; updates: any }) => {
@@ -165,7 +166,7 @@ export default function TableView({ board, sortRules = [], onSortChange }: Table
     try {
       return JSON.parse(value)
     } catch (error) {
-      console.warn('Failed to parse column settings JSON', error)
+      logger.warn('Failed to parse column settings JSON', error)
       return {}
     }
   }

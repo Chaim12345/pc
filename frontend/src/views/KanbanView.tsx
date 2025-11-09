@@ -10,6 +10,7 @@ import { useSocket } from '../contexts/SocketContext'
 import { useToast } from '../contexts/ToastContext'
 import { SocketEvent } from '@monday-clone/shared'
 import ItemDetailModal from '../components/ItemDetailModal'
+import { logger } from '../utils/logger'
 
 interface KanbanViewProps {
   board: Board
@@ -40,7 +41,7 @@ interface KanbanItemProps {
   commentCount?: number
 }
 
-function KanbanItem({ item, column, boardId, isDragging = false, onEditName, onDelete, onDuplicate, onItemClick, commentCount = 0 }: KanbanItemProps) {
+const KanbanItem = memo(function KanbanItem({ item, column, boardId, isDragging = false, onEditName, onDelete, onDuplicate, onItemClick, commentCount = 0 }: KanbanItemProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [editedName, setEditedName] = useState(item.name)
   const [showMenu, setShowMenu] = useState(false)
@@ -220,9 +221,11 @@ function KanbanItem({ item, column, boardId, isDragging = false, onEditName, onD
       </div>
     </div>
   )
-}
+})
 
-function KanbanColumn({ label, column, items, boardId, onItemMove, onAddItem, onEditName, onDelete, onDuplicate, onItemClick }: KanbanColumnProps) {
+KanbanItem.displayName = 'KanbanItem'
+
+const KanbanColumn = memo(function KanbanColumn({ label, column, items, boardId, onItemMove, onAddItem, onEditName, onDelete, onDuplicate, onItemClick }: KanbanColumnProps) {
   const [showAddForm, setShowAddForm] = useState(false)
   const [newItemName, setNewItemName] = useState('')
   const itemIds = items.map((item) => item.id)
@@ -347,7 +350,9 @@ function KanbanColumn({ label, column, items, boardId, onItemMove, onAddItem, on
       </SortableContext>
     </div>
   )
-}
+})
+
+KanbanColumn.displayName = 'KanbanColumn'
 
 export default function KanbanView({ board: boardProp }: KanbanViewProps) {
   const { socket } = useSocket()
@@ -402,7 +407,7 @@ export default function KanbanView({ board: boardProp }: KanbanViewProps) {
     },
     onError: (error) => {
       showToast('Failed to add item', 'error')
-      console.error('Add item error:', error)
+      logger.error('Add item error:', error)
     },
   })
 
@@ -537,23 +542,23 @@ export default function KanbanView({ board: boardProp }: KanbanViewProps) {
     },
   })
 
-  const handleAddItem = (name: string, statusLabel: any) => {
+  const handleAddItem = useCallback((name: string, statusLabel: any) => {
     addItemMutation.mutate({ name, statusLabel })
-  }
+  }, [addItemMutation])
 
-  const handleEditName = (itemId: string, newName: string) => {
+  const handleEditName = useCallback((itemId: string, newName: string) => {
     updateItemMutation.mutate({ itemId, updates: { name: newName } })
-  }
+  }, [updateItemMutation])
 
-  const handleDelete = (itemId: string) => {
+  const handleDelete = useCallback((itemId: string) => {
     if (confirm('Are you sure you want to delete this item?')) {
       deleteItemMutation.mutate(itemId)
     }
-  }
+  }, [deleteItemMutation])
 
-  const handleDuplicate = (itemId: string) => {
+  const handleDuplicate = useCallback((itemId: string) => {
     duplicateItemMutation.mutate(itemId)
-  }
+  }, [duplicateItemMutation])
 
   const handleDragStart = (event: DragStartEvent) => {
     const itemId = event.active.id as string
