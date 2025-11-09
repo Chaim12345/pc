@@ -332,7 +332,7 @@ export const usersController = {
       // Get user's organization
       const orgMembership = await prisma.organizationMember.findFirst({
         where: { userId },
-        include: { organization: true },
+        select: { organizationId: true },
       });
 
       if (!orgMembership) {
