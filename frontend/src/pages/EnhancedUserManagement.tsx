@@ -27,7 +27,9 @@ export default function EnhancedUserManagement() {
   const [roleFilter, setRoleFilter] = useState('ALL')
   const [selectedUsers, setSelectedUsers] = useState<string[]>([])
   const [showInviteModal, setShowInviteModal] = useState(false)
+  const [showAddUserModal, setShowAddUserModal] = useState(false)
   const [inviteData, setInviteData] = useState({ email: '', name: '', role: 'MEMBER' })
+  const [addUserData, setAddUserData] = useState({ email: '', role: 'MEMBER' })
   const [page, setPage] = useState(1)
   const limit = 20
 
@@ -60,6 +62,24 @@ export default function EnhancedUserManagement() {
     },
     onError: (error: any) => {
       showToast(error.response?.data?.error || 'Failed to invite user', 'error')
+    },
+  })
+
+  const addUserMutation = useMutation({
+    mutationFn: async (data: { email: string; role: string }) => {
+      // For adding existing users, we still use invite endpoint but without name
+      // The backend will handle adding existing users to the organization
+      const response = await api.post('/users/invite', { ...data, name: data.email.split('@')[0] })
+      return response.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users', 'all'] })
+      setShowAddUserModal(false)
+      setAddUserData({ email: '', role: 'MEMBER' })
+      showToast('User added successfully!', 'success')
+    },
+    onError: (error: any) => {
+      showToast(error.response?.data?.error || 'Failed to add user', 'error')
     },
   })
 
@@ -133,6 +153,11 @@ export default function EnhancedUserManagement() {
   const handleInviteUser = (e: React.FormEvent) => {
     e.preventDefault()
     inviteUserMutation.mutate(inviteData)
+  }
+
+  const handleAddUser = (e: React.FormEvent) => {
+    e.preventDefault()
+    addUserMutation.mutate(addUserData)
   }
 
   const handleDeleteUser = (userId: string) => {
@@ -284,6 +309,15 @@ export default function EnhancedUserManagement() {
                 </span>
               </>
             )}
+            <button
+              onClick={() => setShowAddUserModal(true)}
+              className="px-5 py-2.5 bg-white dark:bg-monday-dark hover:bg-monday-background dark:hover:bg-gray-800 text-monday-text dark:text-white rounded-lg font-medium flex items-center space-x-2 transition-all hover:scale-105 border border-monday-border dark:border-gray-700"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+              </svg>
+              <span>Add User</span>
+            </button>
             <button
               onClick={() => setShowInviteModal(true)}
               className="px-5 py-2.5 bg-monday-primary hover:bg-monday-primaryHover text-white rounded-lg font-medium flex items-center space-x-2 transition-all hover:scale-105 hover:shadow-lg"
@@ -454,6 +488,70 @@ export default function EnhancedUserManagement() {
           )}
         </main>
       </div>
+
+      {/* Add User Modal */}
+      {showAddUserModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowAddUserModal(false)}>
+          <div className="bg-white dark:bg-monday-darkLight rounded-xl shadow-xl p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-2xl font-bold text-monday-text dark:text-white">Add Existing User</h2>
+              <button
+                onClick={() => setShowAddUserModal(false)}
+                className="text-monday-textLight dark:text-gray-400 hover:text-monday-text dark:hover:text-white"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <form onSubmit={handleAddUser} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-monday-text dark:text-white mb-1">Email</label>
+                <input
+                  type="email"
+                  value={addUserData.email}
+                  onChange={(e) => setAddUserData({ ...addUserData, email: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-monday-background dark:bg-monday-dark text-monday-text dark:text-white focus:outline-none focus:ring-2 focus:ring-monday-primary"
+                  placeholder="user@example.com"
+                  required
+                />
+                <p className="mt-1 text-xs text-monday-textLight dark:text-gray-400">
+                  Add an existing user to your organization by their email address
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-monday-text dark:text-white mb-1">Role</label>
+                <select
+                  value={addUserData.role}
+                  onChange={(e) => setAddUserData({ ...addUserData, role: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-monday-background dark:bg-monday-dark text-monday-text dark:text-white focus:outline-none focus:ring-2 focus:ring-monday-primary"
+                >
+                  <option value="MEMBER">Member</option>
+                  <option value="ADMIN">Admin</option>
+                  <option value="OWNER">Owner</option>
+                  <option value="VIEWER">Viewer</option>
+                </select>
+              </div>
+              <div className="flex space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setShowAddUserModal(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-monday-text dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={addUserMutation.isPending}
+                  className="flex-1 px-4 py-2 bg-monday-primary hover:bg-monday-primaryHover text-white rounded-md transition-colors disabled:opacity-50"
+                >
+                  {addUserMutation.isPending ? 'Adding...' : 'Add User'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Invite User Modal */}
       {showInviteModal && (
