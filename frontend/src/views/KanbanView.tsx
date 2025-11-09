@@ -119,6 +119,15 @@ const KanbanItem = memo(function KanbanItem({ item, column, boardId, isDragging 
             handleNameClick(e)
           }}
           className="font-semibold text-monday-text dark:text-white mb-3 group-hover:text-monday-primary transition-colors cursor-grab active:cursor-grabbing select-none"
+          aria-label={`Drag handle for ${item.name}. Click to edit name.`}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              handleNameClick(e as any)
+            }
+          }}
         >
           {item.name}
         </div>
@@ -183,6 +192,7 @@ const KanbanItem = memo(function KanbanItem({ item, column, boardId, isDragging 
                   setIsEditing(true)
                 }}
                 className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-800 text-monday-text dark:text-white flex items-center space-x-2"
+                aria-label={`Edit name of ${item.name}`}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -196,6 +206,7 @@ const KanbanItem = memo(function KanbanItem({ item, column, boardId, isDragging 
                   onDuplicate(item.id)
                 }}
                 className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-800 text-monday-text dark:text-white flex items-center space-x-2"
+                aria-label={`Duplicate ${item.name}`}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -209,6 +220,7 @@ const KanbanItem = memo(function KanbanItem({ item, column, boardId, isDragging 
                   onDelete(item.id)
                 }}
                 className="w-full px-4 py-2 text-left text-sm hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 flex items-center space-x-2"
+                aria-label={`Delete ${item.name}`}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -276,8 +288,9 @@ const KanbanColumn = memo(function KanbanColumn({ label, column, items, boardId,
           </div>
           <button 
             onClick={() => setShowAddForm(true)}
-            className="p-1 hover:bg-white/20 rounded transition-colors"
+            className="p-1 hover:bg-white/20 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-transparent"
             title="Add item"
+            aria-label={`Add item to ${label.label} column`}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -301,7 +314,8 @@ const KanbanColumn = memo(function KanbanColumn({ label, column, items, boardId,
           <div className="flex space-x-2">
             <button
               onClick={handleAddItem}
-              className="flex-1 px-3 py-1.5 bg-monday-primary hover:bg-monday-primaryHover text-white text-sm rounded transition-colors"
+              className="flex-1 px-3 py-1.5 bg-monday-primary hover:bg-monday-primaryHover text-white text-sm rounded transition-colors focus:outline-none focus:ring-2 focus:ring-monday-primary focus:ring-offset-2"
+              aria-label="Add item"
             >
               Add
             </button>
@@ -310,7 +324,8 @@ const KanbanColumn = memo(function KanbanColumn({ label, column, items, boardId,
                 setNewItemName('')
                 setShowAddForm(false)
               }}
-              className="px-3 py-1.5 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-monday-text dark:text-white text-sm rounded transition-colors"
+              className="px-3 py-1.5 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-monday-text dark:text-white text-sm rounded transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2"
+              aria-label="Cancel adding item"
             >
               Cancel
             </button>

@@ -536,7 +536,8 @@ export default function TableView({ board, sortRules = [], onSortChange }: Table
                         />
                         <button
                           type="submit"
-                          className="px-5 py-2.5 bg-monday-primary hover:bg-monday-primaryHover text-white rounded-lg font-medium transition-all hover:shadow-md hover:scale-105 flex items-center space-x-2"
+                          className="px-5 py-2.5 bg-monday-primary hover:bg-monday-primaryHover text-white rounded-lg font-medium transition-all hover:shadow-md hover:scale-105 flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-monday-primary focus:ring-offset-2"
+                          aria-label="Add item"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -546,7 +547,8 @@ export default function TableView({ board, sortRules = [], onSortChange }: Table
                         <button
                           type="button"
                           onClick={() => setShowAddItemModal(null)}
-                          className="px-5 py-2.5 bg-gray-200 dark:bg-gray-700 text-monday-text dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 font-medium transition-all hover:scale-105"
+                          className="px-5 py-2.5 bg-gray-200 dark:bg-gray-700 text-monday-text dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 font-medium transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2"
+                          aria-label="Cancel adding item"
                         >
                           Cancel
                         </button>
@@ -554,8 +556,9 @@ export default function TableView({ board, sortRules = [], onSortChange }: Table
                     ) : (
                       <button
                         onClick={() => handleAddItem(group.id)}
-                        className="flex items-center space-x-2 text-monday-textLight dark:text-gray-400 hover:text-monday-primary dark:hover:text-monday-primary transition-all group/add hover:scale-105 py-1"
+                        className="flex items-center space-x-2 text-monday-textLight dark:text-gray-400 hover:text-monday-primary dark:hover:text-monday-primary transition-all group/add hover:scale-105 py-1 focus:outline-none focus:ring-2 focus:ring-monday-primary focus:ring-offset-2 rounded"
                         title="Add a new item to this group"
+                        aria-label={`Add a new item to ${group.title || 'this group'}`}
                       >
                         <svg className="w-5 h-5 group-hover/add:rotate-90 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
