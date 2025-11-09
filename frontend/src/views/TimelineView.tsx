@@ -14,6 +14,7 @@ import {
   endOfDay,
   isSameDay,
 } from 'date-fns'
+import ItemDetailModal from '../components/ItemDetailModal'
 
 interface TimelineViewProps {
   board: Board
@@ -31,6 +32,7 @@ export default function TimelineView({ board }: TimelineViewProps) {
   const queryClient = useQueryClient()
   const [currentDate, setCurrentDate] = useState(new Date())
   const [zoom, setZoom] = useState<'day' | 'week' | 'month'>('month')
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
 
   // Find timeline or date columns
   const timelineColumn = board.columns?.find((col) => col.type === 'TIMELINE')
@@ -160,7 +162,7 @@ export default function TimelineView({ board }: TimelineViewProps) {
   }
 
   const dayWidth = 100 / days.length
-  const rowHeight = 50
+  const rowHeight = 60
 
   const previousPeriod = () => {
     if (zoom === 'day') {
@@ -182,10 +184,24 @@ export default function TimelineView({ board }: TimelineViewProps) {
     }
   }
 
+  const goToToday = () => {
+    setCurrentDate(new Date())
+  }
+
   if (!timelineColumn && !dateColumn) {
     return (
-      <div className="text-center py-12 bg-white rounded-lg shadow">
-        <p className="text-gray-500">No timeline or date column found. Please add a date or timeline column to use Timeline view.</p>
+      <div className="flex items-center justify-center h-full bg-white dark:bg-monday-darkLight rounded-xl shadow-monday border border-monday-border/30 dark:border-gray-700">
+        <div className="text-center max-w-md p-8">
+          <div className="w-20 h-20 bg-gradient-to-br from-indigo-200 to-indigo-300 dark:from-indigo-900 dark:to-indigo-800 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-10 h-10 text-indigo-600 dark:text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h3 className="text-xl font-bold text-monday-text dark:text-white mb-2">No Timeline Column Found</h3>
+          <p className="text-monday-textLight dark:text-gray-400">
+            Add a timeline or date column to your board to use the Timeline view.
+          </p>
+        </div>
       </div>
     )
   }
@@ -193,56 +209,84 @@ export default function TimelineView({ board }: TimelineViewProps) {
   const maxRows = Math.max(...timelineItems.map((ti) => ti.row), 0) + 1
 
   return (
-    <div className="bg-white rounded-lg shadow overflow-hidden">
-      <div className="p-4 border-b flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <button onClick={previousPeriod} className="px-3 py-1 text-gray-600 hover:text-gray-900">
-            ←
+    <div className="flex flex-col h-full bg-white dark:bg-monday-darkLight rounded-xl shadow-monday border border-monday-border/30 dark:border-gray-700 overflow-hidden">
+      {/* Header */}
+      <div className="p-4 border-b border-monday-border dark:border-gray-700 bg-gradient-to-r from-white to-gray-50 dark:from-monday-darkLight dark:to-gray-900 flex items-center justify-between flex-shrink-0">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={previousPeriod}
+            className="p-2 hover:bg-monday-background dark:hover:bg-gray-800 rounded-lg transition-all hover:scale-105 text-monday-text dark:text-white"
+            title="Previous period"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
           </button>
-          <h2 className="text-lg font-semibold">
+          <h2 className="text-lg font-bold text-monday-text dark:text-white min-w-[250px] text-center">
             {zoom === 'day'
               ? format(currentDate, 'EEEE, MMMM d, yyyy')
               : zoom === 'week'
               ? `Week of ${format(startOfWeek(currentDate), 'MMM d')}`
               : format(currentDate, 'MMMM yyyy')}
           </h2>
-          <button onClick={nextPeriod} className="px-3 py-1 text-gray-600 hover:text-gray-900">
-            →
+          <button
+            onClick={nextPeriod}
+            className="p-2 hover:bg-monday-background dark:hover:bg-gray-800 rounded-lg transition-all hover:scale-105 text-monday-text dark:text-white"
+            title="Next period"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
           </button>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center gap-2">
           <button
             onClick={() => setZoom('day')}
-            className={`px-3 py-1 rounded text-sm ${
-              zoom === 'day' ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-700'
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              zoom === 'day'
+                ? 'bg-monday-primary text-white shadow-md'
+                : 'bg-white dark:bg-monday-dark text-monday-text dark:text-white hover:bg-monday-background dark:hover:bg-gray-800 border border-monday-border dark:border-gray-700'
             }`}
           >
             Day
           </button>
           <button
             onClick={() => setZoom('week')}
-            className={`px-3 py-1 rounded text-sm ${
-              zoom === 'week' ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-700'
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              zoom === 'week'
+                ? 'bg-monday-primary text-white shadow-md'
+                : 'bg-white dark:bg-monday-dark text-monday-text dark:text-white hover:bg-monday-background dark:hover:bg-gray-800 border border-monday-border dark:border-gray-700'
             }`}
           >
             Week
           </button>
           <button
             onClick={() => setZoom('month')}
-            className={`px-3 py-1 rounded text-sm ${
-              zoom === 'month' ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-700'
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              zoom === 'month'
+                ? 'bg-monday-primary text-white shadow-md'
+                : 'bg-white dark:bg-monday-dark text-monday-text dark:text-white hover:bg-monday-background dark:hover:bg-gray-800 border border-monday-border dark:border-gray-700'
             }`}
           >
             Month
           </button>
+          <button
+            onClick={goToToday}
+            className="px-4 py-2 bg-monday-primary hover:bg-monday-primaryHover text-white text-sm font-medium rounded-lg transition-all hover:scale-105 shadow-sm ml-2"
+          >
+            Today
+          </button>
         </div>
       </div>
 
-      <div className="overflow-x-auto">
+      {/* Timeline */}
+      <div className="flex-1 overflow-auto custom-scrollbar">
         <div className="min-w-full">
           {/* Timeline header */}
-          <div className="flex border-b sticky top-0 bg-white z-10">
-            <div className="w-64 border-r p-2 font-semibold text-sm">Item</div>
+          <div className="flex border-b border-monday-border dark:border-gray-700 sticky top-0 bg-white dark:bg-monday-darkLight z-10 shadow-sm">
+            <div className="w-64 border-r border-monday-border dark:border-gray-700 p-3 font-semibold text-sm text-monday-text dark:text-white bg-gradient-to-r from-gray-50 to-white dark:from-gray-900 dark:to-monday-darkLight">
+              Item
+            </div>
             <div className="flex-1 relative" style={{ minWidth: `${days.length * 40}px` }}>
               {days.map((day, index) => {
                 const isWeekend = day.getDay() === 0 || day.getDay() === 6
@@ -250,13 +294,19 @@ export default function TimelineView({ board }: TimelineViewProps) {
                 return (
                   <div
                     key={day.toISOString()}
-                    className={`inline-block border-r text-xs p-1 text-center ${
-                      isToday ? 'bg-primary-50 border-primary-300' : isWeekend ? 'bg-gray-50' : 'bg-white'
+                    className={`inline-block border-r border-monday-border dark:border-gray-700 text-xs p-2 text-center ${
+                      isToday
+                        ? 'bg-monday-primaryLight dark:bg-monday-primary/20 border-monday-primary dark:border-monday-primary'
+                        : isWeekend
+                        ? 'bg-gray-50 dark:bg-gray-900/50'
+                        : 'bg-white dark:bg-monday-darkLight'
                     }`}
                     style={{ width: `${dayWidth}%` }}
                   >
-                    <div className="font-medium">{format(day, 'd')}</div>
-                    <div className="text-gray-500">{format(day, 'EEE')}</div>
+                    <div className={`font-medium ${isToday ? 'text-monday-primary dark:text-monday-primary' : 'text-monday-text dark:text-white'}`}>
+                      {format(day, 'd')}
+                    </div>
+                    <div className="text-monday-textLight dark:text-gray-400">{format(day, 'EEE')}</div>
                   </div>
                 )
               })}
@@ -268,11 +318,17 @@ export default function TimelineView({ board }: TimelineViewProps) {
             {timelineItems.map((timelineItem) => {
               const { left, width } = getItemPosition(timelineItem)
               const top = timelineItem.row * rowHeight
+              const isToday = timelineItem.startDate && isSameDay(timelineItem.startDate, new Date())
 
               return (
                 <div key={timelineItem.item.id} className="absolute" style={{ top: `${top}px`, left: '256px', right: 0 }}>
-                  <div
-                    className="absolute top-2 h-8 rounded px-2 text-xs flex items-center bg-primary-200 text-primary-800 hover:bg-primary-300 cursor-pointer shadow-sm"
+                  <button
+                    onClick={() => setSelectedItemId(timelineItem.item.id)}
+                    className={`absolute top-2 h-10 rounded-lg px-3 text-xs flex items-center font-medium shadow-md hover:shadow-lg cursor-pointer transition-all ${
+                      isToday
+                        ? 'bg-monday-primary text-white hover:bg-monday-primaryHover'
+                        : 'bg-monday-primaryLight dark:bg-monday-primary/30 text-monday-primary dark:text-monday-primary hover:bg-monday-primary/20 dark:hover:bg-monday-primary/40'
+                    }`}
                     style={{
                       left: `calc(${left}% + 0px)`,
                       width: `${width}%`,
@@ -281,7 +337,7 @@ export default function TimelineView({ board }: TimelineViewProps) {
                     title={`${timelineItem.item.name} - ${format(timelineItem.startDate!, 'MMM d')} to ${format(timelineItem.endDate || timelineItem.startDate!, 'MMM d')}`}
                   >
                     <span className="truncate">{timelineItem.item.name}</span>
-                  </div>
+                  </button>
                 </div>
               )
             })}
@@ -290,9 +346,9 @@ export default function TimelineView({ board }: TimelineViewProps) {
             {days.map((day, index) => (
               <div
                 key={`grid-${day.toISOString()}`}
-                className="absolute border-l border-gray-200"
+                className="absolute border-l border-monday-border dark:border-gray-700"
                 style={{
-                  left: `calc(256px + ${(index * dayWidth)}%)`,
+                  left: `calc(256px + ${index * dayWidth}%)`,
                   top: 0,
                   bottom: 0,
                 }}
@@ -300,16 +356,23 @@ export default function TimelineView({ board }: TimelineViewProps) {
             ))}
 
             {timelineItems.length === 0 && (
-              <div className="text-center py-12 text-gray-500" style={{ paddingLeft: '256px' }}>
+              <div className="text-center py-12 text-monday-textLight dark:text-gray-400" style={{ paddingLeft: '256px' }}>
                 No items with dates found. Add dates to items to see them in the timeline.
               </div>
             )}
           </div>
         </div>
       </div>
+
+      {/* Item Detail Modal */}
+      {selectedItemId && (
+        <ItemDetailModal
+          itemId={selectedItemId}
+          boardId={board.id}
+          isOpen={!!selectedItemId}
+          onClose={() => setSelectedItemId(null)}
+        />
+      )}
     </div>
   )
 }
-
-
-

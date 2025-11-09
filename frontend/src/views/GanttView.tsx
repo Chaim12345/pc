@@ -4,6 +4,7 @@ import { Board, Item, Column, SocketEvent } from '@monday-clone/shared'
 import { api } from '../services/api'
 import { useSocket } from '../contexts/SocketContext'
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, differenceInDays, addDays, isSameDay } from 'date-fns'
+import ItemDetailModal from '../components/ItemDetailModal'
 
 interface GanttViewProps {
   board: Board
@@ -21,6 +22,7 @@ export default function GanttView({ board }: GanttViewProps) {
   const queryClient = useQueryClient()
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [zoom, setZoom] = useState<'week' | 'month' | 'quarter'>('month')
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
 
   // Find timeline or date columns
   const timelineColumn = board.columns?.find((col) => col.type === 'TIMELINE')
@@ -154,63 +156,91 @@ export default function GanttView({ board }: GanttViewProps) {
 
   if (!timelineColumn && !dateColumn) {
     return (
-      <div className="text-center py-12 bg-white rounded-lg shadow">
-        <p className="text-gray-500">No timeline or date column found. Please add a date or timeline column to use Gantt view.</p>
+      <div className="flex items-center justify-center h-full bg-white dark:bg-monday-darkLight rounded-xl shadow-monday border border-monday-border/30 dark:border-gray-700">
+        <div className="text-center max-w-md p-8">
+          <div className="w-20 h-20 bg-gradient-to-br from-purple-200 to-purple-300 dark:from-purple-900 dark:to-purple-800 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-10 h-10 text-purple-600 dark:text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+          </div>
+          <h3 className="text-xl font-bold text-monday-text dark:text-white mb-2">No Timeline Column Found</h3>
+          <p className="text-monday-textLight dark:text-gray-400">
+            Add a timeline or date column to your board to use the Gantt view.
+          </p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="bg-white rounded-lg shadow overflow-hidden">
-      <div className="p-4 border-b flex items-center justify-between">
-        <div className="flex items-center space-x-2">
+    <div className="flex flex-col h-full bg-white dark:bg-monday-darkLight rounded-xl shadow-monday border border-monday-border/30 dark:border-gray-700 overflow-hidden">
+      {/* Header */}
+      <div className="p-4 border-b border-monday-border dark:border-gray-700 bg-gradient-to-r from-white to-gray-50 dark:from-monday-darkLight dark:to-gray-900 flex items-center justify-between flex-shrink-0">
+        <div className="flex items-center gap-2">
           <button
             onClick={() => setZoom('week')}
-            className={`px-3 py-1 rounded text-sm ${
-              zoom === 'week' ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-700'
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              zoom === 'week'
+                ? 'bg-monday-primary text-white shadow-md'
+                : 'bg-white dark:bg-monday-dark text-monday-text dark:text-white hover:bg-monday-background dark:hover:bg-gray-800 border border-monday-border dark:border-gray-700'
             }`}
           >
             Week
           </button>
           <button
             onClick={() => setZoom('month')}
-            className={`px-3 py-1 rounded text-sm ${
-              zoom === 'month' ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-700'
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              zoom === 'month'
+                ? 'bg-monday-primary text-white shadow-md'
+                : 'bg-white dark:bg-monday-dark text-monday-text dark:text-white hover:bg-monday-background dark:hover:bg-gray-800 border border-monday-border dark:border-gray-700'
             }`}
           >
             Month
           </button>
           <button
             onClick={() => setZoom('quarter')}
-            className={`px-3 py-1 rounded text-sm ${
-              zoom === 'quarter' ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-700'
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              zoom === 'quarter'
+                ? 'bg-monday-primary text-white shadow-md'
+                : 'bg-white dark:bg-monday-dark text-monday-text dark:text-white hover:bg-monday-background dark:hover:bg-gray-800 border border-monday-border dark:border-gray-700'
             }`}
           >
             Quarter
           </button>
         </div>
-        <div className="text-sm text-gray-600">
+        <div className="text-sm font-medium text-monday-text dark:text-white">
           {format(days[0], 'MMM d')} - {format(days[days.length - 1], 'MMM d, yyyy')}
         </div>
       </div>
 
-      <div className="overflow-x-auto">
+      {/* Gantt Chart */}
+      <div className="flex-1 overflow-auto custom-scrollbar">
         <div className="min-w-full">
           {/* Timeline header */}
-          <div className="flex border-b sticky top-0 bg-white z-10">
-            <div className="w-64 border-r p-2 font-semibold text-sm">Item</div>
+          <div className="flex border-b border-monday-border dark:border-gray-700 sticky top-0 bg-white dark:bg-monday-darkLight z-10 shadow-sm">
+            <div className="w-64 border-r border-monday-border dark:border-gray-700 p-3 font-semibold text-sm text-monday-text dark:text-white bg-gradient-to-r from-gray-50 to-white dark:from-gray-900 dark:to-monday-darkLight">
+              Item
+            </div>
             <div className="flex-1 relative" style={{ minWidth: `${days.length * 30}px` }}>
               {days.map((day, index) => {
                 const isWeekend = day.getDay() === 0 || day.getDay() === 6
+                const isToday = isSameDay(day, new Date())
                 return (
                   <div
                     key={day.toISOString()}
-                    className={`inline-block border-r text-xs p-1 text-center ${
-                      isWeekend ? 'bg-gray-50' : 'bg-white'
+                    className={`inline-block border-r border-monday-border dark:border-gray-700 text-xs p-2 text-center ${
+                      isToday
+                        ? 'bg-monday-primaryLight dark:bg-monday-primary/20 border-monday-primary dark:border-monday-primary'
+                        : isWeekend
+                        ? 'bg-gray-50 dark:bg-gray-900/50'
+                        : 'bg-white dark:bg-monday-darkLight'
                     }`}
                     style={{ width: `${dayWidth}%` }}
                   >
-                    {format(day, 'd')}
+                    <div className={`font-medium ${isToday ? 'text-monday-primary dark:text-monday-primary' : 'text-monday-text dark:text-white'}`}>
+                      {format(day, 'd')}
+                    </div>
+                    <div className="text-monday-textLight dark:text-gray-400">{format(day, 'EEE')}</div>
                   </div>
                 )
               })}
@@ -224,15 +254,26 @@ export default function GanttView({ board }: GanttViewProps) {
               const isToday = ganttItem.startDate && isSameDay(ganttItem.startDate, new Date())
 
               return (
-                <div key={ganttItem.item.id} className="flex border-b hover:bg-gray-50">
-                  <div className="w-64 border-r p-2 flex items-center">
-                    <div className="flex-1 truncate text-sm font-medium">{ganttItem.item.name}</div>
+                <div
+                  key={ganttItem.item.id}
+                  className="flex border-b border-monday-border dark:border-gray-700 hover:bg-monday-background dark:hover:bg-gray-800/50 transition-colors"
+                >
+                  <div className="w-64 border-r border-monday-border dark:border-gray-700 p-3 flex items-center bg-white dark:bg-monday-darkLight">
+                    <button
+                      onClick={() => setSelectedItemId(ganttItem.item.id)}
+                      className="flex-1 truncate text-sm font-medium text-monday-text dark:text-white hover:text-monday-primary dark:hover:text-monday-primary text-left transition-colors"
+                    >
+                      {ganttItem.item.name}
+                    </button>
                   </div>
                   <div className="flex-1 relative" style={{ minWidth: `${days.length * 30}px` }}>
-                    <div className="relative h-10">
-                      <div
-                        className={`absolute top-2 h-6 rounded px-2 text-xs flex items-center ${
-                          isToday ? 'bg-primary-500 text-white' : 'bg-primary-200 text-primary-800'
+                    <div className="relative h-12 flex items-center">
+                      <button
+                        onClick={() => setSelectedItemId(ganttItem.item.id)}
+                        className={`absolute top-1/2 -translate-y-1/2 h-8 rounded-lg px-3 text-xs flex items-center font-medium shadow-md hover:shadow-lg transition-all cursor-pointer ${
+                          isToday
+                            ? 'bg-monday-primary text-white hover:bg-monday-primaryHover'
+                            : 'bg-monday-primaryLight dark:bg-monday-primary/30 text-monday-primary dark:text-monday-primary hover:bg-monday-primary/20 dark:hover:bg-monday-primary/40'
                         }`}
                         style={{
                           left: `${left}%`,
@@ -242,9 +283,9 @@ export default function GanttView({ board }: GanttViewProps) {
                       >
                         <span className="truncate">{ganttItem.item.name}</span>
                         {ganttItem.duration && ganttItem.duration > 1 && (
-                          <span className="ml-1">({ganttItem.duration}d)</span>
+                          <span className="ml-2 opacity-75">({ganttItem.duration}d)</span>
                         )}
-                      </div>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -252,16 +293,23 @@ export default function GanttView({ board }: GanttViewProps) {
             })}
 
             {ganttItems.length === 0 && (
-              <div className="text-center py-12 text-gray-500">
+              <div className="text-center py-12 text-monday-textLight dark:text-gray-400 px-4">
                 No items with dates found. Add dates to items to see them in the Gantt chart.
               </div>
             )}
           </div>
         </div>
       </div>
+
+      {/* Item Detail Modal */}
+      {selectedItemId && (
+        <ItemDetailModal
+          itemId={selectedItemId}
+          boardId={board.id}
+          isOpen={!!selectedItemId}
+          onClose={() => setSelectedItemId(null)}
+        />
+      )}
     </div>
   )
 }
-
-
-
