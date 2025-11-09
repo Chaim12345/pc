@@ -4,6 +4,7 @@ import { AuthRequest } from '../middleware/auth';
 import { executeAutomations } from '../services/automationService';
 import { AutomationTriggerType } from '@monday-clone/shared';
 import { notificationService } from '../services/notificationService';
+import { cacheService } from '../services/cacheService';
 
 const prisma = new PrismaClient();
 
@@ -49,6 +50,9 @@ export const columnController = {
       });
 
       res.status(201).json({ success: true, data: column });
+      
+      // Invalidate cache
+      await cacheService.invalidateBoard(boardId);
     } catch (error: any) {
       console.error('Create column error:', error);
       res.status(500).json({ success: false, error: error.message });
@@ -68,10 +72,18 @@ export const columnController = {
 
       const column = await prisma.column.update({
         where: { id },
-        data: updateData
+        data: updateData,
+        select: { boardId: true }
       });
 
-      res.json({ success: true, data: column });
+      const updatedColumn = await prisma.column.findUnique({
+        where: { id }
+      });
+
+      res.json({ success: true, data: updatedColumn });
+      
+      // Invalidate cache
+      await cacheService.invalidateBoard(column.boardId);
     } catch (error: any) {
       console.error('Update column error:', error);
       res.status(500).json({ success: false, error: error.message });
@@ -82,11 +94,22 @@ export const columnController = {
     try {
       const { id } = req.params;
 
+      // Get boardId before deleting
+      const column = await prisma.column.findUnique({
+        where: { id },
+        select: { boardId: true }
+      });
+
       await prisma.column.delete({
         where: { id }
       });
 
       res.json({ success: true, message: 'Column deleted' });
+      
+      // Invalidate cache
+      if (column) {
+        await cacheService.invalidateBoard(column.boardId);
+      }
     } catch (error: any) {
       console.error('Delete column error:', error);
       res.status(500).json({ success: false, error: error.message });
@@ -181,25 +204,29 @@ export const columnController = {
           const newStatus = value?.label || value || 'Unset';
 
           if (oldStatus !== newStatus) {
-            // Get all assignees from PERSON columns
+            // Get all assignees from PERSON columns in a single query
             const personColumns = await prisma.column.findMany({
               where: {
                 boardId: columnValue.item.boardId,
                 type: { in: ['PEOPLE', 'PERSON'] },
               },
+              select: {
+                id: true,
+              },
             });
 
+            const columnIds = personColumns.map(col => col.id);
             const assigneeUserIds = new Set<string>();
-            for (const column of personColumns) {
-              const cv = await prisma.columnValue.findUnique({
-                where: {
-                  itemId_columnId: {
-                    itemId,
-                    columnId: column.id,
-                  },
-                },
-              });
+            
+            // Fetch all column values at once
+            const columnValues = await prisma.columnValue.findMany({
+              where: {
+                itemId,
+                columnId: { in: columnIds },
+              },
+            });
 
+            for (const cv of columnValues) {
               if (cv?.value) {
                 const assignees = Array.isArray(cv.value) ? cv.value : [cv.value];
                 for (const assignee of assignees) {
@@ -250,6 +277,10 @@ export const columnController = {
       }
 
       res.json({ success: true, data: columnValue });
+      
+      // Invalidate cache
+      await cacheService.invalidateItem(itemId);
+      await cacheService.invalidateBoard(columnValue.item.boardId);
     } catch (error: any) {
       console.error('Update column value error:', error);
       res.status(500).json({ success: false, error: error.message });

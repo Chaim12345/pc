@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth';
 import { notificationService } from '../services/notificationService';
 import { parseMentions, findUsersFromMentions } from '../utils/mentionParser';
+import { cacheService } from '../services/cacheService';
 
 const prisma = new PrismaClient();
 
@@ -10,6 +11,13 @@ export const commentController = {
   async getByItem(req: AuthRequest, res: Response) {
     try {
       const { itemId } = req.params;
+
+      // Try to get from cache first
+      const cacheKey = `comments:item:${itemId}`;
+      const cached = await cacheService.get(cacheKey);
+      if (cached) {
+        return res.json({ success: true, data: cached });
+      }
 
       const comments = await prisma.comment.findMany({
         where: {
@@ -41,6 +49,9 @@ export const commentController = {
         },
         orderBy: { createdAt: 'asc' }
       });
+
+      // Cache for 1 minute (comments change frequently)
+      await cacheService.set(cacheKey, comments, 60);
 
       res.json({ success: true, data: comments });
     } catch (error: any) {
@@ -189,6 +200,9 @@ export const commentController = {
       }
 
       res.status(201).json({ success: true, data: comment });
+      
+      // Invalidate cache
+      await cacheService.invalidateItem(itemId);
     } catch (error: any) {
       console.error('Create comment error:', error);
       res.status(500).json({ success: false, error: error.message });
@@ -216,6 +230,15 @@ export const commentController = {
       });
 
       res.json({ success: true, data: comment });
+      
+      // Invalidate cache - need to get itemId first
+      const updatedComment = await prisma.comment.findUnique({
+        where: { id },
+        select: { itemId: true }
+      });
+      if (updatedComment) {
+        await cacheService.invalidateItem(updatedComment.itemId);
+      }
     } catch (error: any) {
       console.error('Update comment error:', error);
       res.status(500).json({ success: false, error: error.message });
@@ -226,9 +249,20 @@ export const commentController = {
     try {
       const { id } = req.params;
 
+      // Get itemId before deleting for cache invalidation
+      const comment = await prisma.comment.findUnique({
+        where: { id },
+        select: { itemId: true }
+      });
+
       await prisma.comment.delete({
         where: { id }
       });
+
+      // Invalidate cache
+      if (comment) {
+        await cacheService.invalidateItem(comment.itemId);
+      }
 
       res.json({ success: true, message: 'Comment deleted' });
     } catch (error: any) {

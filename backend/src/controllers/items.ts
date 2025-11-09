@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth';
 import { executeAutomations } from '../services/automationService';
 import { AutomationTriggerType } from '@monday-clone/shared';
+import { cacheService } from '../services/cacheService';
 
 const prisma = new PrismaClient();
 
@@ -55,6 +56,13 @@ export const itemController = {
     try {
       const { id } = req.params;
 
+      // Try to get from cache first
+      const cacheKey = `item:${id}`;
+      const cached = await cacheService.get(cacheKey);
+      if (cached) {
+        return res.json({ success: true, data: cached });
+      }
+
       const item = await prisma.item.findUnique({
         where: { id },
         include: {
@@ -81,6 +89,9 @@ export const itemController = {
       if (!item) {
         return res.status(404).json({ success: false, error: 'Item not found' });
       }
+
+      // Cache for 2 minutes
+      await cacheService.set(cacheKey, item, 120);
 
       res.json({ success: true, data: item });
     } catch (error: any) {
@@ -130,6 +141,10 @@ export const itemController = {
       executeAutomations(boardId, AutomationTriggerType.ITEM_CREATED, {
         itemId: item.id
       }).catch(err => console.error('Automation error:', err));
+
+      // Invalidate cache
+      await cacheService.invalidateItem(item.id);
+      await cacheService.invalidateBoard(boardId);
 
       res.status(201).json({ success: true, data: item });
     } catch (error: any) {
@@ -191,6 +206,10 @@ export const itemController = {
         itemId: updatedItem.id
       }).catch(err => console.error('Automation error:', err));
 
+      // Invalidate cache
+      await cacheService.invalidateItem(id);
+      await cacheService.invalidateBoard(updatedItem.boardId);
+
       res.json({ success: true, data: updatedItem });
     } catch (error: any) {
       console.error('Update item error:', error);
@@ -216,6 +235,10 @@ export const itemController = {
         executeAutomations(item.boardId, AutomationTriggerType.ITEM_DELETED, {
           itemId: id
         }).catch(err => console.error('Automation error:', err));
+        
+        // Invalidate cache
+        await cacheService.invalidateItem(id);
+        await cacheService.invalidateBoard(item.boardId);
       }
 
       res.json({ success: true, message: 'Item deleted' });

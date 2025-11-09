@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth';
+import { cacheService } from '../services/cacheService';
 
 const prisma = new PrismaClient();
 
@@ -8,6 +9,13 @@ export const boardController = {
   async getAll(req: AuthRequest, res: Response) {
     try {
       const userId = req.userId!;
+
+      // Try to get from cache first
+      const cacheKey = `boards:user:${userId}`;
+      const cached = await cacheService.get(cacheKey);
+      if (cached) {
+        return res.json({ success: true, data: cached });
+      }
 
       // Get user's organizations
       const orgMemberships = await prisma.organizationMember.findMany({
@@ -45,6 +53,9 @@ export const boardController = {
         orderBy: { updatedAt: 'desc' }
       });
 
+      // Cache for 5 minutes
+      await cacheService.set(cacheKey, boards, 300);
+
       res.json({ success: true, data: boards });
     } catch (error: any) {
       console.error('Get boards error:', error);
@@ -56,6 +67,13 @@ export const boardController = {
     try {
       const { id } = req.params;
       const userId = req.userId!;
+
+      // Try to get from cache first
+      const cacheKey = `board:${id}`;
+      const cached = await cacheService.get(cacheKey);
+      if (cached) {
+        return res.json({ success: true, data: cached });
+      }
 
       const board = await prisma.board.findUnique({
         where: { id },
@@ -108,6 +126,9 @@ export const boardController = {
       if (!board) {
         return res.status(404).json({ success: false, error: 'Board not found' });
       }
+
+      // Cache for 5 minutes
+      await cacheService.set(cacheKey, board, 300);
 
       res.json({ success: true, data: board });
     } catch (error: any) {
@@ -162,6 +183,9 @@ export const boardController = {
       });
 
       res.status(201).json({ success: true, data: board });
+      
+      // Invalidate cache
+      await cacheService.invalidateBoard(board.id);
     } catch (error: any) {
       console.error('Create board error:', error);
       res.status(500).json({ success: false, error: error.message });
@@ -179,6 +203,9 @@ export const boardController = {
       });
 
       res.json({ success: true, data: board });
+      
+      // Invalidate cache
+      await cacheService.invalidateBoard(id);
     } catch (error: any) {
       console.error('Update board error:', error);
       res.status(500).json({ success: false, error: error.message });
@@ -237,6 +264,9 @@ export const boardController = {
       });
 
       res.json({ success: true, message: 'Board deleted' });
+      
+      // Invalidate cache
+      await cacheService.invalidateBoard(id);
     } catch (error: any) {
       console.error('Delete board error:', error);
       res.status(500).json({ success: false, error: error.message });
