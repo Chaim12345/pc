@@ -356,15 +356,20 @@ export default function KanbanView({ board: boardProp }: KanbanViewProps) {
   const [activeItem, setActiveItem] = useState<Item | null>(null)
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
 
-  // Get board from query cache to ensure optimistic updates are reflected
-  const { data: board = boardProp } = useQuery<Board>({
+  // Subscribe to board data from query cache to ensure optimistic updates trigger re-renders
+  const { data: board } = useQuery<Board>({
     queryKey: ['board', boardProp.id],
     queryFn: async () => {
+      // This will use cached data if available, otherwise fetch
       const cached = queryClient.getQueryData<Board>(['board', boardProp.id])
-      return cached || boardProp
+      if (cached) return cached
+      const response = await api.get(`/boards/${boardProp.id}`)
+      return response.data.data
     },
     initialData: boardProp,
-    staleTime: 0, // Always use latest cache data
+    // Ensure we always get the latest from cache
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   })
 
   // Find status column
