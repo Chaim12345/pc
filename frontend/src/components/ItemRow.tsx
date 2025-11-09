@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import { Item, Column } from '@monday-clone/shared';
 import { useMutation } from '@tanstack/react-query';
 
@@ -18,7 +18,7 @@ interface ItemRowProps {
   createSubItemMutation: any;
 }
 
-const ItemRow: React.FC<ItemRowProps> = ({
+const ItemRow: React.FC<ItemRowProps> = memo(({
   item,
   columns,
   level,
@@ -201,6 +201,8 @@ const ItemRow: React.FC<ItemRowProps> = ({
       )}
     </>
   );
-};
+});
+
+ItemRow.displayName = 'ItemRow';
 
 export default ItemRow;
