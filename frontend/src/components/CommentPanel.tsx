@@ -201,16 +201,16 @@ export default function CommentPanel({ itemId, boardId, isOpen, onClose, embedde
                 </div>
               </div>
             ) : (
-              <div className="text-sm text-gray-700 whitespace-pre-wrap">
-                {comment.text.split(/(@\w+)/g).map((part, idx) => {
+              <div className="text-sm text-monday-text dark:text-white whitespace-pre-wrap comment-text">
+                {comment.text.split(/(@[A-Za-z][A-Za-z0-9\s]*?)(?=\s|$|,|\.|!|\?|:)/g).map((part, idx) => {
                   if (part.startsWith('@')) {
                     return (
-                      <span key={idx} className="text-primary-600 font-medium">
+                      <span key={idx} className="text-monday-primary dark:text-monday-primary font-semibold bg-monday-primaryLight/20 dark:bg-monday-primary/20 px-1 rounded">
                         {part}
                       </span>
                     )
                   }
-                  return part
+                  return <span key={idx}>{part}</span>
                 })}
               </div>
             )}
