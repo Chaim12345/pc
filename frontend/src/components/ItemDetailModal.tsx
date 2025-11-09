@@ -1,7 +1,8 @@
 import React, { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Item } from '@monday-clone/shared'
 import { api } from '../services/api'
+import { useToast } from '../contexts/ToastContext'
 import CommentPanel from './CommentPanel'
 import AttachmentPanel from './AttachmentPanel'
 import TimeTracking from './TimeTracking'
@@ -16,6 +17,11 @@ interface ItemDetailModalProps {
 
 export default function ItemDetailModal({ itemId, boardId, isOpen, onClose }: ItemDetailModalProps) {
   const [activeTab, setActiveTab] = useState<'details' | 'comments' | 'attachments' | 'time'>('details')
+  const [showAddColumn, setShowAddColumn] = useState(false)
+  const [newColumnTitle, setNewColumnTitle] = useState('')
+  const [newColumnType, setNewColumnType] = useState('TEXT')
+  const { showToast } = useToast()
+  const queryClient = useQueryClient()
 
   const { data: item, isLoading } = useQuery<Item>({
     queryKey: ['item', itemId],
@@ -24,6 +30,28 @@ export default function ItemDetailModal({ itemId, boardId, isOpen, onClose }: It
       return response.data.data
     },
     enabled: isOpen && !!itemId,
+  })
+
+  const addColumnMutation = useMutation({
+    mutationFn: async ({ title, type }: { title: string; type: string }) => {
+      const response = await api.post('/columns', {
+        boardId,
+        title,
+        type,
+      })
+      return response.data.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['board', boardId] })
+      queryClient.invalidateQueries({ queryKey: ['item', itemId] })
+      showToast('Column added successfully', 'success')
+      setShowAddColumn(false)
+      setNewColumnTitle('')
+      setNewColumnType('TEXT')
+    },
+    onError: () => {
+      showToast('Failed to add column', 'error')
+    },
   })
 
   if (!isOpen) return null
@@ -174,7 +202,10 @@ export default function ItemDetailModal({ itemId, boardId, isOpen, onClose }: It
 
               {/* Quick Actions */}
               <div className="grid grid-cols-3 gap-3">
-                <button className="flex flex-col items-center justify-center p-4 bg-monday-background dark:bg-monday-dark rounded-xl hover:bg-monday-primaryLight/20 dark:hover:bg-gray-800 transition-colors">
+                <button 
+                  onClick={() => setShowAddColumn(true)}
+                  className="flex flex-col items-center justify-center p-4 bg-monday-background dark:bg-monday-dark rounded-xl hover:bg-monday-primaryLight/20 dark:hover:bg-gray-800 transition-colors"
+                >
                   <svg className="w-6 h-6 text-monday-primary mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                   </svg>
@@ -215,6 +246,110 @@ export default function ItemDetailModal({ itemId, boardId, isOpen, onClose }: It
           )}
         </div>
       </div>
+
+      {/* Add Column Modal */}
+      {showAddColumn && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-monday-darkLight rounded-xl shadow-2xl max-w-md w-full p-6 animate-in slide-in-from-bottom-4 duration-300">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-xl font-bold text-monday-text dark:text-white flex items-center space-x-2">
+                <svg className="w-6 h-6 text-monday-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                </svg>
+                <span>Add New Column</span>
+              </h3>
+              <button
+                onClick={() => {
+                  setShowAddColumn(false)
+                  setNewColumnTitle('')
+                  setNewColumnType('TEXT')
+                }}
+                className="text-monday-textLight dark:text-gray-400 hover:text-monday-text dark:hover:text-white transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                if (newColumnTitle.trim()) {
+                  addColumnMutation.mutate({ title: newColumnTitle.trim(), type: newColumnType })
+                }
+              }}
+              className="space-y-4"
+            >
+              <div>
+                <label className="block text-sm font-semibold text-monday-text dark:text-white mb-2">
+                  Column Name
+                </label>
+                <input
+                  type="text"
+                  value={newColumnTitle}
+                  onChange={(e) => setNewColumnTitle(e.target.value)}
+                  placeholder="Enter column name..."
+                  className="w-full px-4 py-2.5 border-2 border-monday-border dark:border-gray-700 rounded-lg bg-white dark:bg-monday-dark text-monday-text dark:text-white focus:outline-none focus:border-monday-primary dark:focus:border-monday-primary focus:ring-2 focus:ring-monday-primary/20 transition-all"
+                  autoFocus
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-monday-text dark:text-white mb-2">
+                  Column Type
+                </label>
+                <select
+                  value={newColumnType}
+                  onChange={(e) => setNewColumnType(e.target.value)}
+                  className="w-full px-4 py-2.5 border-2 border-monday-border dark:border-gray-700 rounded-lg bg-white dark:bg-monday-dark text-monday-text dark:text-white focus:outline-none focus:border-monday-primary dark:focus:border-monday-primary focus:ring-2 focus:ring-monday-primary/20 transition-all"
+                >
+                  <option value="TEXT">Text</option>
+                  <option value="NUMBER">Number</option>
+                  <option value="STATUS">Status</option>
+                  <option value="DATE">Date</option>
+                  <option value="PRIORITY">Priority</option>
+                  <option value="PEOPLE">People</option>
+                  <option value="FILES">Files</option>
+                  <option value="CHECKBOX">Checkbox</option>
+                  <option value="RATING">Rating</option>
+                </select>
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAddColumn(false)
+                    setNewColumnTitle('')
+                    setNewColumnType('TEXT')
+                  }}
+                  className="px-5 py-2.5 bg-gray-200 dark:bg-gray-700 text-monday-text dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 font-medium transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={!newColumnTitle.trim() || addColumnMutation.isPending}
+                  className="px-5 py-2.5 bg-monday-primary hover:bg-monday-primaryHover text-white rounded-lg font-medium transition-all hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                >
+                  {addColumnMutation.isPending ? (
+                    <>
+                      <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <span>Adding...</span>
+                    </>
+                  ) : (
+                    <span>Add Column</span>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
