@@ -114,6 +114,9 @@ export default function NotificationCenter() {
       socket.on('NOTIFICATION_NEW', () => {
         queryClient.invalidateQueries({ queryKey: ['notifications'] })
         queryClient.invalidateQueries({ queryKey: ['notifications', 'unread-count'] })
+        // Reset to first page when new notification arrives
+        setPage(1)
+        setAllNotifications([])
       })
 
       return () => {
@@ -249,7 +252,7 @@ export default function NotificationCenter() {
           <div className="p-4 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-lg font-bold text-monday-text dark:text-white">Notifications</h3>
-              {notifications.length > 0 && (
+              {allNotifications.length > 0 && (
                 <button
                   onClick={() => markAllAsReadMutation.mutate()}
                   className="text-xs text-monday-primary hover:text-monday-primaryHover font-medium focus:outline-none focus:ring-2 focus:ring-monday-primary focus:ring-offset-2 rounded px-2 py-1"
