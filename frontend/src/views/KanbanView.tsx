@@ -526,11 +526,10 @@ export default function KanbanView({ board: boardProp }: KanbanViewProps) {
       showToast('Failed to move item', 'error')
     },
     onSuccess: () => {
-      // Silently refetch in background to ensure consistency
-      // Don't invalidate immediately to avoid flicker - let optimistic update stay
+      // Invalidate queries to update all views (Table, Gantt, etc.)
+      // React Query will intelligently refetch only when components are mounted
       queryClient.invalidateQueries({ 
-        queryKey: ['board', board.id],
-        refetchType: 'none' // Don't refetch immediately, just mark as stale
+        queryKey: ['board', board.id]
       })
       if (socket) {
         socket.emit(SocketEvent.COLUMN_UPDATED, { boardId: board.id })
