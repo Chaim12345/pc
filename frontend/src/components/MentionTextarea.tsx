@@ -34,7 +34,7 @@ export default function MentionTextarea({
   const suggestionsRef = useRef<HTMLDivElement>(null)
 
   // Fetch users in organization for mentions
-  const { data: users: orgUsers } = useQuery({
+  const { data: orgUsers } = useQuery<User[]>({
     queryKey: ['users', 'organization'],
     queryFn: async () => {
       const response = await api.get('/users')
