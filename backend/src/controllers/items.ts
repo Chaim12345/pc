@@ -148,19 +148,7 @@ export const itemController = {
       if (groupId !== undefined) updateData.groupId = groupId;
       if (position !== undefined) updateData.position = position;
 
-      const item = await prisma.item.update({
-        where: { id },
-        data: updateData,
-        include: {
-          columnValues: {
-            include: {
-              column: true
-            }
-          }
-        }
-      });
-
-      // Update column values if provided
+      // Update column values if provided (do this before updating item to avoid extra query)
       if (columnValues) {
         for (const cv of columnValues) {
           await prisma.columnValue.upsert({
@@ -180,20 +168,27 @@ export const itemController = {
         }
       }
 
-      const updatedItem = await prisma.item.findUnique({
+      // Update item and fetch with all relations in one query
+      const updatedItem = await prisma.item.update({
         where: { id },
+        data: updateData,
         include: {
           columnValues: {
             include: {
               column: true
+            }
+          },
+          board: {
+            select: {
+              id: true
             }
           }
         }
       });
 
       // Trigger automations
-      executeAutomations(item.boardId, AutomationTriggerType.ITEM_UPDATED, {
-        itemId: item.id
+      executeAutomations(updatedItem.boardId, AutomationTriggerType.ITEM_UPDATED, {
+        itemId: updatedItem.id
       }).catch(err => console.error('Automation error:', err));
 
       res.json({ success: true, data: updatedItem });

@@ -113,12 +113,10 @@ export const commentController = {
 
       // Send notifications for mentions
       if (mentionUserIds.length > 0) {
-        console.log(`[Comment] Sending notifications to ${mentionUserIds.length} mentioned users`);
         for (const mentionedUserId of mentionUserIds) {
           // Don't notify the commenter themselves
           if (mentionedUserId !== userId) {
             try {
-              console.log(`[Comment] Creating mention notification for user ${mentionedUserId}`);
               await notificationService.notifyMention(
                 mentionedUserId,
                 commenter.name,
@@ -126,40 +124,38 @@ export const commentController = {
                 item.name,
                 item.boardId
               );
-              console.log(`[Comment] Notification sent successfully to user ${mentionedUserId}`);
             } catch (error) {
               console.error('Failed to send mention notification:', error);
             }
-          } else {
-            console.log(`[Comment] Skipping notification for commenter themselves (${mentionedUserId})`);
           }
         }
-      } else {
-        console.log(`[Comment] No mentions found in comment`);
       }
 
       // Send notification to item assignees (if any)
-      // Get all PERSON column values for this item
+      // Get all PERSON column values for this item in a single query
       const personColumns = await prisma.column.findMany({
         where: {
           boardId: item.boardId,
           type: 'PEOPLE',
         },
+        select: {
+          id: true,
+        },
       });
 
       if (personColumns.length > 0) {
+        const columnIds = personColumns.map(col => col.id);
         const assigneeUserIds = new Set<string>();
         
-        for (const column of personColumns) {
-          const columnValue = await prisma.columnValue.findUnique({
-            where: {
-              itemId_columnId: {
-                itemId,
-                columnId: column.id,
-              },
-            },
-          });
+        // Fetch all column values at once instead of one by one
+        const columnValues = await prisma.columnValue.findMany({
+          where: {
+            itemId,
+            columnId: { in: columnIds },
+          },
+        });
 
+        for (const columnValue of columnValues) {
           if (columnValue?.value) {
             const assignees = Array.isArray(columnValue.value) 
               ? columnValue.value 
