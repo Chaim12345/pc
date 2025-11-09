@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo, useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../services/api'
 import { useAuth } from '../contexts/AuthContext'
@@ -21,13 +21,19 @@ export default function ReactionBar({ commentId, itemId }: ReactionBarProps) {
   const queryClient = useQueryClient()
   const [showPicker, setShowPicker] = useState(false)
 
-  const queryKey = commentId
-    ? ['reactions', 'comment', commentId]
-    : ['reactions', 'item', itemId]
+  const queryKey = useMemo(() => 
+    commentId
+      ? ['reactions', 'comment', commentId]
+      : ['reactions', 'item', itemId],
+    [commentId, itemId]
+  )
 
-  const endpoint = commentId
-    ? `/reactions/comment/${commentId}`
-    : `/reactions/item/${itemId}`
+  const endpoint = useMemo(() =>
+    commentId
+      ? `/reactions/comment/${commentId}`
+      : `/reactions/item/${itemId}`,
+    [commentId, itemId]
+  )
 
   // Fetch reactions
   const { data: reactionsData } = useQuery({
@@ -57,13 +63,13 @@ export default function ReactionBar({ commentId, itemId }: ReactionBarProps) {
   const reactions: GroupedReaction[] = reactionsData?.reactions || []
   const currentUserReactions = reactionsData?.currentUserReactions || []
 
-  const handleToggleReaction = (emoji: string) => {
+  const handleToggleReaction = useCallback((emoji: string) => {
     toggleReactionMutation.mutate(emoji)
-  }
+  }, [toggleReactionMutation])
 
-  const userHasReacted = (emoji: string) => {
+  const userHasReacted = useCallback((emoji: string) => {
     return currentUserReactions.some((r: any) => r.emoji === emoji)
-  }
+  }, [currentUserReactions])
 
   return (
     <div className="flex items-center gap-2 flex-wrap relative">
