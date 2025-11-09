@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import { api } from '../services/api'
 import { useSocket } from '../contexts/SocketContext'
 import { useToast } from '../contexts/ToastContext'
@@ -16,23 +17,49 @@ interface Notification {
   metadata?: any
 }
 
+interface NotificationsResponse {
+  notifications: Notification[]
+  pagination: {
+    page: number
+    limit: number
+    total: number
+    totalPages: number
+  }
+}
+
 export default function NotificationCenter() {
   const [isOpen, setIsOpen] = useState(false)
   const [filter, setFilter] = useState<'all' | 'mentions' | 'comments' | 'updates' | 'system'>('all')
+  const [page, setPage] = useState(1)
+  const [allNotifications, setAllNotifications] = useState<Notification[]>([])
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const parentRef = useRef<HTMLDivElement>(null)
   const { socket } = useSocket()
   const { showToast } = useToast()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
+  const limit = 50
 
-  // Fetch notifications
-  const { data: notificationsData } = useQuery({
-    queryKey: ['notifications'],
+  // Fetch notifications with pagination
+  const { data: notificationsData, isLoading: isLoadingNotifications } = useQuery<NotificationsResponse>({
+    queryKey: ['notifications', page, limit],
     queryFn: async () => {
-      const response = await api.get('/notifications')
+      const response = await api.get(`/notifications?page=${page}&limit=${limit}`)
       return response.data.data
     },
+    placeholderData: (previousData) => previousData,
   })
+
+  // Accumulate notifications across pages
+  useEffect(() => {
+    if (notificationsData?.notifications) {
+      if (page === 1) {
+        setAllNotifications(notificationsData.notifications)
+      } else {
+        setAllNotifications(prev => [...prev, ...notificationsData.notifications])
+      }
+    }
+  }, [notificationsData, page])
 
   // Fetch unread count
   const { data: unreadCount } = useQuery({
@@ -112,7 +139,7 @@ export default function NotificationCenter() {
     }
   }, [isOpen])
 
-  const notifications: Notification[] = notificationsData?.notifications || []
+  const pagination = notificationsData?.pagination
 
   // Filter tabs - memoized
   const filterTabs = useMemo(() => [
@@ -125,11 +152,25 @@ export default function NotificationCenter() {
 
   // Filter notifications - memoized for performance
   const filteredNotifications = useMemo(() => {
-    return notifications.filter((notif) => {
+    return allNotifications.filter((notif) => {
       if (filter === 'all') return true
       return notif.type === filter
     })
-  }, [notifications, filter])
+  }, [allNotifications, filter])
+
+  // Virtual scrolling setup
+  const virtualizer = useVirtualizer({
+    count: filteredNotifications.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 100, // Estimated height per notification item
+    overscan: 5, // Render 5 extra items outside viewport
+  })
+
+  // Reset page and notifications when filter changes
+  useEffect(() => {
+    setPage(1)
+    setAllNotifications([])
+  }, [filter])
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -241,13 +282,23 @@ export default function NotificationCenter() {
           </div>
 
           {/* Notifications List */}
-          <div className="flex-1 overflow-y-auto custom-scrollbar">
+          <div 
+            ref={parentRef}
+            id={`notification-list-${filter}`}
+            className="flex-1 overflow-y-auto custom-scrollbar"
+            style={{ height: '400px' }}
+          >
             <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
               {filteredNotifications.length === 0 
                 ? 'No notifications' 
                 : `${filteredNotifications.length} notification${filteredNotifications.length !== 1 ? 's' : ''}`}
             </div>
-            {filteredNotifications.length === 0 ? (
+            {isLoadingNotifications && filteredNotifications.length === 0 ? (
+              <div className="p-8 text-center">
+                <div className="w-8 h-8 border-4 border-monday-primary border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+                <p className="text-sm text-monday-textLight dark:text-gray-400">Loading notifications...</p>
+              </div>
+            ) : filteredNotifications.length === 0 ? (
               <div className="p-8 text-center">
                 <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
                   <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -257,58 +308,91 @@ export default function NotificationCenter() {
                 <p className="text-sm text-monday-textLight dark:text-gray-400">No notifications</p>
               </div>
             ) : (
-              <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                {filteredNotifications.map((notification) => (
-                  <div
-                    key={notification.id}
-                    className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer ${
-                      !notification.read ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''
-                    }`}
-                    onClick={() => {
-                      if (!notification.read) {
-                        markAsReadMutation.mutate(notification.id)
-                      }
-                      // Use link from metadata if available
-                      const link = notification.metadata?.link || notification.link
-                      if (link) {
-                        setIsOpen(false)
-                        navigate(link)
-                      }
-                    }}
-                  >
-                    <div className="flex items-start space-x-3">
-                      {getNotificationIcon(notification.type)}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between">
-                          <p className="text-sm font-medium text-monday-text dark:text-white">
-                            {notification.title}
-                          </p>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              deleteNotificationMutation.mutate(notification.id)
-                            }}
-                            className="ml-2 p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-                            aria-label={`Delete notification: ${notification.title}`}
-                          >
-                            <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
+              <div
+                style={{
+                  height: `${virtualizer.getTotalSize()}px`,
+                  width: '100%',
+                  position: 'relative',
+                }}
+              >
+                {virtualizer.getVirtualItems().map((virtualItem) => {
+                  const notification = filteredNotifications[virtualItem.index]
+                  return (
+                    <div
+                      key={notification.id}
+                      data-index={virtualItem.index}
+                      ref={virtualizer.measureElement}
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        transform: `translateY(${virtualItem.start}px)`,
+                      }}
+                    >
+                      <div
+                        className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer border-b border-gray-200 dark:border-gray-700 ${
+                          !notification.read ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''
+                        }`}
+                        onClick={() => {
+                          if (!notification.read) {
+                            markAsReadMutation.mutate(notification.id)
+                          }
+                          // Use link from metadata if available
+                          const link = notification.metadata?.link || notification.link
+                          if (link) {
+                            setIsOpen(false)
+                            navigate(link)
+                          }
+                        }}
+                      >
+                        <div className="flex items-start space-x-3">
+                          {getNotificationIcon(notification.type)}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between">
+                              <p className="text-sm font-medium text-monday-text dark:text-white">
+                                {notification.title}
+                              </p>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  deleteNotificationMutation.mutate(notification.id)
+                                }}
+                                className="ml-2 p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                                aria-label={`Delete notification: ${notification.title}`}
+                              >
+                                <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                              </button>
+                            </div>
+                            <p className="text-xs text-monday-textLight dark:text-gray-400 mt-1">
+                              {notification.message}
+                            </p>
+                            <p className="text-xs text-monday-textLight dark:text-gray-500 mt-1">
+                              {formatTimestamp(notification.createdAt)}
+                            </p>
+                          </div>
+                          {!notification.read && (
+                            <div className="w-2 h-2 bg-monday-primary rounded-full"></div>
+                          )}
                         </div>
-                        <p className="text-xs text-monday-textLight dark:text-gray-400 mt-1">
-                          {notification.message}
-                        </p>
-                        <p className="text-xs text-monday-textLight dark:text-gray-500 mt-1">
-                          {formatTimestamp(notification.createdAt)}
-                        </p>
                       </div>
-                      {!notification.read && (
-                        <div className="w-2 h-2 bg-monday-primary rounded-full"></div>
-                      )}
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
+              </div>
+            )}
+            {/* Load more button if there are more pages */}
+            {pagination && pagination.page < pagination.totalPages && (
+              <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+                <button
+                  onClick={() => setPage(prev => prev + 1)}
+                  className="w-full px-4 py-2 text-sm text-monday-primary hover:bg-monday-primaryLight/20 dark:hover:bg-monday-primary/10 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-monday-primary focus:ring-offset-2"
+                  aria-label={`Load more notifications (page ${pagination.page + 1} of ${pagination.totalPages})`}
+                >
+                  Load more ({pagination.total - (pagination.page * pagination.limit)} remaining)
+                </button>
               </div>
             )}
           </div>
