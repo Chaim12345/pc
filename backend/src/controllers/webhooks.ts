@@ -49,7 +49,6 @@ export async function triggerWebhooks(boardId: string, event: string, data: any)
   try {
     // In production, fetch webhooks from database and send HTTP requests
     // For now, this is a placeholder
-    console.log(`Webhook triggered for board ${boardId}: ${event}`, data);
   } catch (error) {
     console.error('Error triggering webhooks:', error);
   }

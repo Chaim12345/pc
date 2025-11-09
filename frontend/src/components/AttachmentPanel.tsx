@@ -5,6 +5,7 @@ import { api } from '../services/api'
 import { useToast } from '../contexts/ToastContext'
 import { format } from 'date-fns'
 import ConfirmationDialog from './ConfirmationDialog'
+import { logger } from '../utils/logger'
 
 interface AttachmentPanelProps {
   itemId: string
@@ -59,7 +60,7 @@ export default function AttachmentPanel({ itemId, boardId, isOpen, onClose, embe
       queryClient.invalidateQueries({ queryKey: ['board', boardId] })
       showToast('File uploaded successfully!', 'success')
     } catch (error) {
-      console.error('Upload error:', error)
+      logger.error('Upload error:', error)
       showToast('Failed to upload file', 'error')
     } finally {
       setUploading(false)
@@ -82,7 +83,7 @@ export default function AttachmentPanel({ itemId, boardId, isOpen, onClose, embe
       window.URL.revokeObjectURL(url)
       showToast('File downloaded successfully', 'success')
     } catch (error) {
-      console.error('Download error:', error)
+      logger.error('Download error:', error)
       showToast('Failed to download file', 'error')
     }
   }

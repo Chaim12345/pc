@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { io, Socket } from 'socket.io-client'
 import { useAuth } from './AuthContext'
+import { logger } from '../utils/logger'
 
 interface SocketContextType {
   socket: Socket | null
@@ -21,11 +22,11 @@ export function SocketProvider({ children }: { children: ReactNode }) {
       })
 
       newSocket.on('connect', () => {
-        console.log('Socket connected')
+        logger.log('Socket connected')
       })
 
       newSocket.on('disconnect', () => {
-        console.log('Socket disconnected')
+        logger.log('Socket disconnected')
       })
 
       setSocket(newSocket)

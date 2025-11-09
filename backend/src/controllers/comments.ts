@@ -113,10 +113,12 @@ export const commentController = {
 
       // Send notifications for mentions
       if (mentionUserIds.length > 0) {
+        console.log(`[Comment] Sending notifications to ${mentionUserIds.length} mentioned users`);
         for (const mentionedUserId of mentionUserIds) {
           // Don't notify the commenter themselves
           if (mentionedUserId !== userId) {
             try {
+              console.log(`[Comment] Creating mention notification for user ${mentionedUserId}`);
               await notificationService.notifyMention(
                 mentionedUserId,
                 commenter.name,
@@ -124,11 +126,16 @@ export const commentController = {
                 item.name,
                 item.boardId
               );
+              console.log(`[Comment] Notification sent successfully to user ${mentionedUserId}`);
             } catch (error) {
               console.error('Failed to send mention notification:', error);
             }
+          } else {
+            console.log(`[Comment] Skipping notification for commenter themselves (${mentionedUserId})`);
           }
         }
+      } else {
+        console.log(`[Comment] No mentions found in comment`);
       }
 
       // Send notification to item assignees (if any)

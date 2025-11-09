@@ -28,8 +28,6 @@ export function setupSocket(io: Server) {
   });
 
   io.on('connection', (socket: AuthenticatedSocket) => {
-    console.log(`User ${socket.userId} connected`);
-
     // Join user's personal notification room
     if (socket.userId) {
       socket.join(`user:${socket.userId}`);
@@ -99,7 +97,6 @@ export function setupSocket(io: Server) {
           boardId: socket.boardId
         });
       }
-      console.log(`User ${socket.userId} disconnected`);
     });
   });
 }

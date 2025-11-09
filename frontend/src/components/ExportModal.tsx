@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useToast } from '../contexts/ToastContext'
 import { api } from '../services/api'
+import { logger } from '../utils/logger'
 
 interface Props {
   boardId: string
@@ -37,7 +38,7 @@ export default function ExportModal({ boardId, boardName, isOpen, onClose }: Pro
       showToast(`Board exported as ${format.toUpperCase()} successfully`, 'success')
       onClose()
     } catch (error: any) {
-      console.error('Export error:', error)
+      logger.error('Export error:', error)
       showToast('Failed to export board', 'error')
     } finally {
       setExporting(false)

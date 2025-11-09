@@ -3,6 +3,7 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useToast } from '../contexts/ToastContext'
 import { api } from '../services/api'
+import { logger } from '../utils/logger'
 
 interface FormField {
   id: string
@@ -118,7 +119,7 @@ export default function FormEditorPage() {
     if (formData.boardId) {
       api.get(`/groups/board/${formData.boardId}`)
         .then(response => setGroups(response.data.data))
-        .catch(error => console.error('Failed to fetch groups:', error))
+        .catch(error => logger.error('Failed to fetch groups:', error))
     }
   }, [formData.boardId])
 
