@@ -161,6 +161,7 @@ model Item {
   @@index([position])
   @@index([parentId])
   @@index([updatedAt])
+  @@index([boardId, groupId, position]) // Composite index for board queries with sorting
   @@map("items")
 }
 
@@ -216,6 +217,7 @@ model Comment {
   @@index([userId])
   @@index([parentId])
   @@index([createdAt])
+  @@index([itemId, parentId]) // Composite index for fetching comments with replies
   @@map("comments")
 }
 
@@ -330,6 +332,7 @@ model Notification {
   @@index([userId])
   @@index([read])
   @@index([createdAt])
+  @@index([userId, read, createdAt]) // Composite index for common notification queries
   @@map("notifications")
 }
 
