@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../services/api'
@@ -114,11 +114,22 @@ export default function NotificationCenter() {
 
   const notifications: Notification[] = notificationsData?.notifications || []
 
-  // Filter notifications
-  const filteredNotifications = notifications.filter((notif) => {
-    if (filter === 'all') return true
-    return notif.type === filter
-  })
+  // Filter tabs - memoized
+  const filterTabs = useMemo(() => [
+    { key: 'all', label: 'All' },
+    { key: 'mentions', label: 'Mentions' },
+    { key: 'comments', label: 'Comments' },
+    { key: 'updates', label: 'Updates' },
+    { key: 'system', label: 'System' },
+  ], [])
+
+  // Filter notifications - memoized for performance
+  const filteredNotifications = useMemo(() => {
+    return notifications.filter((notif) => {
+      if (filter === 'all') return true
+      return notif.type === filter
+    })
+  }, [notifications, filter])
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -209,13 +220,7 @@ export default function NotificationCenter() {
 
             {/* Filter Tabs */}
             <div className="flex space-x-2 overflow-x-auto">
-              {[
-                { key: 'all', label: 'All' },
-                { key: 'mentions', label: 'Mentions' },
-                { key: 'comments', label: 'Comments' },
-                { key: 'updates', label: 'Updates' },
-                { key: 'system', label: 'System' },
-              ].map((tab) => (
+              {filterTabs.map((tab) => (
                 <button
                   key={tab.key}
                   onClick={() => setFilter(tab.key as any)}
@@ -233,6 +238,11 @@ export default function NotificationCenter() {
 
           {/* Notifications List */}
           <div className="flex-1 overflow-y-auto custom-scrollbar">
+            <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+              {filteredNotifications.length === 0 
+                ? 'No notifications' 
+                : `${filteredNotifications.length} notification${filteredNotifications.length !== 1 ? 's' : ''}`}
+            </div>
             {filteredNotifications.length === 0 ? (
               <div className="p-8 text-center">
                 <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">

@@ -452,7 +452,7 @@ export default function MainLayout() {
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+        <main id="main-content" role="main" className="flex-1 overflow-y-auto p-6 custom-scrollbar">
           <Outlet />
         </main>
       </div>
