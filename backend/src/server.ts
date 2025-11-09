@@ -11,6 +11,7 @@ import { setupSocket } from './socket';
 import { setupRoutes } from './routes';
 import { apiLimiter, sanitizeInput } from './middleware/security';
 import { errorHandler, errorLogger, notFoundHandler } from './middleware/errorHandler';
+import { cacheService } from './services/cacheService';
 
 dotenv.config();
 
@@ -58,7 +59,11 @@ setupRoutes(app);
 
 // Health check
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    redis: cacheService.isConnected() ? 'connected' : 'disconnected'
+  });
 });
 
 // Error handling middleware (must be last)
@@ -70,6 +75,7 @@ httpServer.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
   console.log(`   Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`   CORS origin: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
+  console.log(`   Redis cache: ${cacheService.isConnected() ? '✅ Connected' : '⚠️  Disconnected (caching disabled)'}`);
   
   // Start recurring tasks cron job (runs every hour at minute 0)
   cron.schedule('0 * * * *', async () => {
