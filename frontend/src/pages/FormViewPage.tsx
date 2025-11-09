@@ -73,95 +73,162 @@ export default function FormViewPage() {
   }
 
   const renderField = (field: FormField) => {
+    const fieldId = `field-${field.id}`
     const commonClasses = "w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+    const labelClasses = "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
 
     switch (field.type) {
       case 'text':
       case 'email':
       case 'phone':
         return (
-          <input
-            type={field.type}
-            value={formData[field.id] || ''}
-            onChange={(e) => handleFieldChange(field.id, e.target.value)}
-            placeholder={field.placeholder}
-            required={field.required}
-            className={commonClasses}
-          />
+          <div>
+            <label htmlFor={fieldId} className={labelClasses}>
+              {field.label}
+              {field.required && <span className="text-red-500 ml-1" aria-label="required">*</span>}
+            </label>
+            <input
+              id={fieldId}
+              type={field.type}
+              value={formData[field.id] || ''}
+              onChange={(e) => handleFieldChange(field.id, e.target.value)}
+              placeholder={field.placeholder}
+              required={field.required}
+              className={commonClasses}
+              aria-required={field.required}
+              aria-describedby={field.placeholder ? `${fieldId}-hint` : undefined}
+            />
+            {field.placeholder && (
+              <span id={`${fieldId}-hint`} className="sr-only">{field.placeholder}</span>
+            )}
+          </div>
         )
       
       case 'number':
         return (
-          <input
-            type="number"
-            value={formData[field.id] || ''}
-            onChange={(e) => handleFieldChange(field.id, e.target.value)}
-            placeholder={field.placeholder}
-            required={field.required}
-            className={commonClasses}
-          />
+          <div>
+            <label htmlFor={fieldId} className={labelClasses}>
+              {field.label}
+              {field.required && <span className="text-red-500 ml-1" aria-label="required">*</span>}
+            </label>
+            <input
+              id={fieldId}
+              type="number"
+              value={formData[field.id] || ''}
+              onChange={(e) => handleFieldChange(field.id, e.target.value)}
+              placeholder={field.placeholder}
+              required={field.required}
+              className={commonClasses}
+              aria-required={field.required}
+              aria-describedby={field.placeholder ? `${fieldId}-hint` : undefined}
+            />
+            {field.placeholder && (
+              <span id={`${fieldId}-hint`} className="sr-only">{field.placeholder}</span>
+            )}
+          </div>
         )
       
       case 'date':
         return (
-          <input
-            type="date"
-            value={formData[field.id] || ''}
-            onChange={(e) => handleFieldChange(field.id, e.target.value)}
-            required={field.required}
-            className={commonClasses}
-          />
+          <div>
+            <label htmlFor={fieldId} className={labelClasses}>
+              {field.label}
+              {field.required && <span className="text-red-500 ml-1" aria-label="required">*</span>}
+            </label>
+            <input
+              id={fieldId}
+              type="date"
+              value={formData[field.id] || ''}
+              onChange={(e) => handleFieldChange(field.id, e.target.value)}
+              required={field.required}
+              className={commonClasses}
+              aria-required={field.required}
+            />
+          </div>
         )
       
       case 'textarea':
         return (
-          <textarea
-            value={formData[field.id] || ''}
-            onChange={(e) => handleFieldChange(field.id, e.target.value)}
-            placeholder={field.placeholder}
-            required={field.required}
-            className={`${commonClasses} resize-none`}
-            rows={4}
-          />
+          <div>
+            <label htmlFor={fieldId} className={labelClasses}>
+              {field.label}
+              {field.required && <span className="text-red-500 ml-1" aria-label="required">*</span>}
+            </label>
+            <textarea
+              id={fieldId}
+              value={formData[field.id] || ''}
+              onChange={(e) => handleFieldChange(field.id, e.target.value)}
+              placeholder={field.placeholder}
+              required={field.required}
+              className={`${commonClasses} resize-none`}
+              rows={4}
+              aria-required={field.required}
+              aria-describedby={field.placeholder ? `${fieldId}-hint` : undefined}
+            />
+            {field.placeholder && (
+              <span id={`${fieldId}-hint`} className="sr-only">{field.placeholder}</span>
+            )}
+          </div>
         )
       
       case 'dropdown':
         return (
-          <select
-            value={formData[field.id] || ''}
-            onChange={(e) => handleFieldChange(field.id, e.target.value)}
-            required={field.required}
-            className={commonClasses}
-          >
-            <option value="">Select an option</option>
-            {field.options?.map((option, idx) => (
-              <option key={idx} value={option}>{option}</option>
-            ))}
-          </select>
+          <div>
+            <label htmlFor={fieldId} className={labelClasses}>
+              {field.label}
+              {field.required && <span className="text-red-500 ml-1" aria-label="required">*</span>}
+            </label>
+            <select
+              id={fieldId}
+              value={formData[field.id] || ''}
+              onChange={(e) => handleFieldChange(field.id, e.target.value)}
+              required={field.required}
+              className={commonClasses}
+              aria-required={field.required}
+            >
+              <option value="">Select an option</option>
+              {field.options?.map((option, idx) => (
+                <option key={idx} value={option}>{option}</option>
+              ))}
+            </select>
+          </div>
         )
       
       case 'checkbox':
         return (
-          <label className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2">
             <input
+              id={fieldId}
               type="checkbox"
               checked={formData[field.id] || false}
               onChange={(e) => handleFieldChange(field.id, e.target.checked)}
               required={field.required}
+              aria-required={field.required}
               className="w-5 h-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
             />
-            <span className="text-gray-700">{field.placeholder || 'Check this box'}</span>
-          </label>
+            <label htmlFor={fieldId} className="text-gray-700 dark:text-gray-300 cursor-pointer">
+              {field.label}
+              {field.required && <span className="text-red-500 ml-1" aria-label="required">*</span>}
+            </label>
+          </div>
         )
       
       case 'file':
         return (
-          <input
-            type="file"
-            onChange={(e) => handleFieldChange(field.id, e.target.files?.[0])}
-            required={field.required}
-            className={commonClasses}
-          />
+          <div>
+            <label htmlFor={fieldId} className={labelClasses}>
+              {field.label}
+              {field.required && <span className="text-red-500 ml-1" aria-label="required">*</span>}
+            </label>
+            <input
+              id={fieldId}
+              type="file"
+              onChange={(e) => handleFieldChange(field.id, e.target.files?.[0])}
+              required={field.required}
+              className={commonClasses}
+              aria-required={field.required}
+            />
+          </div>
         )
       
       default:
