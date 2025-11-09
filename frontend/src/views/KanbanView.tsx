@@ -349,12 +349,23 @@ function KanbanColumn({ label, column, items, boardId, onItemMove, onAddItem, on
   )
 }
 
-export default function KanbanView({ board }: KanbanViewProps) {
+export default function KanbanView({ board: boardProp }: KanbanViewProps) {
   const { socket } = useSocket()
   const { showToast } = useToast()
   const queryClient = useQueryClient()
   const [activeItem, setActiveItem] = useState<Item | null>(null)
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
+
+  // Get board from query cache to ensure optimistic updates are reflected
+  const { data: board = boardProp } = useQuery<Board>({
+    queryKey: ['board', boardProp.id],
+    queryFn: async () => {
+      const cached = queryClient.getQueryData<Board>(['board', boardProp.id])
+      return cached || boardProp
+    },
+    initialData: boardProp,
+    staleTime: 0, // Always use latest cache data
+  })
 
   // Find status column
   const statusColumn = board.columns?.find((col) => col.type === 'STATUS')
