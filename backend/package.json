@@ -28,7 +28,8 @@
     "otplib": "^12.0.1",
     "pdfkit": "^0.17.2",
     "qrcode": "^1.5.4",
-    "socket.io": "^4.5.4"
+    "socket.io": "^4.5.4",
+    "zod": "^4.1.12"
   },
   "devDependencies": {
     "@prisma/client": "^6.19.0",
