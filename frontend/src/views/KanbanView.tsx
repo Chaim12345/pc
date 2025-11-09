@@ -325,7 +325,7 @@ function KanbanColumn({ label, column, items, boardId, onItemMove, onAddItem, on
                 key={item.id} 
                 item={item} 
                 column={column}
-                boardId={board.id}
+                boardId={boardId}
                 onEditName={onEditName} 
                 onDelete={onDelete} 
                 onDuplicate={onDuplicate}
