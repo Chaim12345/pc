@@ -8,6 +8,12 @@ const router = Router();
 router.use(authenticate);
 
 router.get('/', usersController.getUsersInOrganization);
+router.get('/all', usersController.getAllUsers);
+router.post('/invite', usersController.inviteUser);
+router.put('/:id/status', usersController.updateUserStatus);
+router.put('/:id/role', usersController.updateUserRole);
+router.delete('/:id', usersController.deleteUser);
+router.post('/bulk', usersController.bulkUpdateUsers);
 router.get('/me/profile', usersController.getProfile);
 router.put('/me/profile', usersController.updateProfile);
 router.put('/me/password', usersController.changePassword);
