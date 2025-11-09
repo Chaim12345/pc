@@ -51,9 +51,8 @@ function KanbanItem({ item, column, boardId, isDragging = false, onEditName, onD
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition: isItemDragging ? 'none' : transition || 'transform 200ms ease, opacity 200ms ease',
-    opacity: isItemDragging ? 0.4 : 1,
-    scale: isItemDragging ? 0.95 : 1,
+    transition: isItemDragging ? 'none' : (transition || 'transform 150ms cubic-bezier(0.2, 0, 0, 1), opacity 150ms ease'),
+    opacity: isItemDragging ? 0.5 : 1,
   }
 
   const columnValue = item.columnValues?.find((cv) => cv.columnId === column.id)
