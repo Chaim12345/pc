@@ -33,18 +33,17 @@ export default function MentionTextarea({
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const suggestionsRef = useRef<HTMLDivElement>(null)
 
-  // Fetch board members for mentions
-  const { data: members } = useQuery({
-    queryKey: ['board-members', boardId],
+  // Fetch users in organization for mentions
+  const { data: users: orgUsers } = useQuery({
+    queryKey: ['users', 'organization'],
     queryFn: async () => {
-      if (!boardId) return []
-      const response = await api.get(`/boards/${boardId}/members`)
-      return response.data.data
+      const response = await api.get('/users')
+      return response.data.data || []
     },
-    enabled: !!boardId,
+    enabled: true, // Always enabled since we want org users
   })
 
-  const users: User[] = members || []
+  const users: User[] = orgUsers || []
 
   // Filter users based on mention query
   const filteredUsers = users.filter((user) =>

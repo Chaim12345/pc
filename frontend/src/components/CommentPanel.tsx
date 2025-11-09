@@ -27,6 +27,22 @@ export default function CommentPanel({ itemId, boardId, isOpen, onClose, embedde
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const [deleteCommentId, setDeleteCommentId] = useState<string | null>(null)
 
+  // Fetch users for mention extraction
+  const { data: users = [] } = useQuery<User[]>({
+    queryKey: ['users', 'organization'],
+    queryFn: async () => {
+      const response = await api.get('/users')
+      return response.data.data || []
+    },
+    enabled: isOpen,
+  })
+
+  // Create a map of user names to IDs for mention extraction
+  const userNameToIdMap = new Map<string, string>()
+  users.forEach((u) => {
+    userNameToIdMap.set(u.name.toLowerCase(), u.id)
+  })
+
   const { data: comments = [] } = useQuery<Comment[]>({
     queryKey: ['comments', itemId],
     queryFn: async () => {
@@ -92,17 +108,30 @@ export default function CommentPanel({ itemId, boardId, isOpen, onClose, embedde
     }
   }, [socket, itemId, queryClient])
 
+  // Extract user IDs from mentions in text
+  const extractMentions = (text: string): string[] => {
+    const mentions: string[] = []
+    // Match @Name or @Name Surname patterns (matches until space, punctuation, or end)
+    const mentionRegex = /@([A-Za-z][A-Za-z0-9\s]*?)(?=\s|$|,|\.|!|\?|:)/g
+    let match
+    
+    while ((match = mentionRegex.exec(text)) !== null) {
+      const mentionedName = match[1].trim()
+      // Try exact match first, then try case-insensitive
+      const userId = userNameToIdMap.get(mentionedName.toLowerCase())
+      if (userId) {
+        mentions.push(userId)
+      }
+    }
+    
+    return [...new Set(mentions)] // Remove duplicates
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!newComment.trim()) return
 
-    // Extract mentions (@username)
-    const mentionRegex = /@(\w+)/g
-    const mentions: string[] = []
-    let match
-    while ((match = mentionRegex.exec(newComment)) !== null) {
-      mentions.push(match[1])
-    }
+    const mentions = extractMentions(newComment)
 
     createCommentMutation.mutate({
       text: newComment,
@@ -113,12 +142,7 @@ export default function CommentPanel({ itemId, boardId, isOpen, onClose, embedde
   const handleReplySubmit = (parentId: string) => {
     if (!replyText.trim()) return
 
-    const mentionRegex = /@(\w+)/g
-    const mentions: string[] = []
-    let match
-    while ((match = mentionRegex.exec(replyText)) !== null) {
-      mentions.push(match[1])
-    }
+    const mentions = extractMentions(replyText)
 
     createCommentMutation.mutate({
       text: replyText,
@@ -228,17 +252,20 @@ export default function CommentPanel({ itemId, boardId, isOpen, onClose, embedde
             )}
             {replyingTo === comment.id && (
               <div className="mt-3 ml-4">
-                <textarea
+                <MentionTextarea
                   value={replyText}
-                  onChange={(e) => setReplyText(e.target.value)}
-                  placeholder="Write a reply..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  rows={2}
+                  onChange={setReplyText}
+                  placeholder="Write a reply... Use @username to mention someone"
+                  className="w-full px-3 py-2 border border-monday-border dark:border-gray-700 rounded-lg bg-white dark:bg-monday-dark text-monday-text dark:text-white focus:outline-none focus:ring-2 focus:ring-monday-primary focus:border-transparent resize-none"
+                  boardId={boardId}
+                  onMention={(userId) => {
+                    console.log('User mentioned in reply:', userId)
+                  }}
                 />
                 <div className="flex space-x-2 mt-2">
                   <button
                     onClick={() => handleReplySubmit(comment.id)}
-                    className="px-3 py-1 bg-primary-600 text-white rounded text-sm hover:bg-primary-700"
+                    className="px-3 py-1 bg-monday-primary text-white rounded-lg text-sm hover:bg-monday-primaryHover transition-all"
                   >
                     Reply
                   </button>
@@ -247,7 +274,7 @@ export default function CommentPanel({ itemId, boardId, isOpen, onClose, embedde
                       setReplyingTo(null)
                       setReplyText('')
                     }}
-                    className="px-3 py-1 bg-gray-200 text-gray-700 rounded text-sm hover:bg-gray-300"
+                    className="px-3 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm hover:bg-gray-300 dark:hover:bg-gray-600 transition-all"
                   >
                     Cancel
                   </button>
