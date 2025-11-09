@@ -28,6 +28,7 @@ export default function BoardView() {
   const { showToast } = useToast()
   const queryClient = useQueryClient()
   const [showBoardMenu, setShowBoardMenu] = useState(false)
+  const [showMoreMenu, setShowMoreMenu] = useState(false)
   const [showAddColumn, setShowAddColumn] = useState(false)
   const [newColumnTitle, setNewColumnTitle] = useState('')
   const [newColumnType, setNewColumnType] = useState('TEXT')
@@ -188,76 +189,198 @@ export default function BoardView() {
     <div className="flex flex-col h-screen w-full bg-monday-background dark:bg-monday-dark overflow-hidden">
       {/* Top Navigation Bar is now in MainLayout */}
 
-      {/* Quick Actions Bar */}
-      <div className="bg-white dark:bg-monday-darkLight border-b border-monday-border dark:border-gray-700 px-6 py-3 flex-shrink-0 z-20">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2 overflow-x-auto custom-scrollbar">
-            <QuickActionButton
-              icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>}
-              label="New Item"
+      {/* Improved Toolbar */}
+      <div className="bg-white dark:bg-monday-darkLight border-b border-monday-border dark:border-gray-700 px-4 py-2.5 flex-shrink-0 z-20">
+        <div className="flex items-center justify-between gap-3">
+          {/* Primary Actions - Most Used */}
+          <div className="flex items-center gap-2">
+            <button
               onClick={() => showToast('Click on a group to add an item', 'info')}
-            />
-            <QuickActionButton
-              icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>}
-              label="Add Column"
+              className="flex items-center gap-2 px-3 py-1.5 bg-monday-primary hover:bg-monday-primaryHover text-white text-sm font-medium rounded-lg transition-all hover:scale-105 shadow-sm"
+              title="Add new item"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              <span className="hidden sm:inline">New Item</span>
+            </button>
+            
+            <button
               onClick={() => setShowAddColumn(true)}
-            />
-            <QuickActionButton
-              icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg>}
-              label={`Filter${filterRules.length > 0 ? ` (${filterRules.length})` : ''}`}
-              onClick={() => setShowFilterModal(true)}
-            />
-            <QuickActionButton
-              icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" /></svg>}
-              label={`Sort${sortRules.length > 0 ? ` (${sortRules.length})` : ''}`}
-              onClick={() => setShowSortModal(true)}
-            />
-            <QuickActionButton
-              icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>}
-              label="Forms"
-              onClick={() => navigate(`/forms/board/${boardId}`)}
-            />
-            <QuickActionButton
-              icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>}
-              label="AI Assistant"
-              onClick={() => setShowAIAssistant(true)}
-            />
-            <QuickActionButton
-              icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>}
-              label="Guest Access"
-              onClick={() => setShowGuestAccess(true)}
-            />
-            <QuickActionButton
-              icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
-              label="Recurring Tasks"
-              onClick={() => setShowRecurringTasks(true)}
-            />
-            <QuickActionButton
-              icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>}
-              label="Import"
-              onClick={() => setShowImport(true)}
-            />
-            <QuickActionButton
-              icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>}
-              label="Export"
-              onClick={() => setShowExport(true)}
-            />
-            <QuickActionButton
-              icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>}
-              label="Automations"
-              onClick={() => setShowAutomations(true)}
-            />
+              className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-monday-dark hover:bg-monday-background dark:hover:bg-gray-800 text-monday-text dark:text-white text-sm font-medium rounded-lg border border-monday-border dark:border-gray-700 transition-all hover:scale-105"
+              title="Add column"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+              </svg>
+              <span className="hidden sm:inline">Column</span>
+            </button>
+
+            {/* Divider */}
+            <div className="w-px h-6 bg-monday-border dark:bg-gray-700"></div>
+
+            {/* View & Organize */}
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setShowFilterModal(true)}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 text-sm font-medium rounded-lg transition-all hover:scale-105 ${
+                  filterRules.length > 0
+                    ? 'bg-monday-primaryLight dark:bg-monday-primary/20 text-monday-primary dark:text-monday-primary border border-monday-primary/30'
+                    : 'bg-white dark:bg-monday-dark hover:bg-monday-background dark:hover:bg-gray-800 text-monday-text dark:text-white border border-monday-border dark:border-gray-700'
+                }`}
+                title={`Filter${filterRules.length > 0 ? ` (${filterRules.length} active)` : ''}`}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                </svg>
+                {filterRules.length > 0 && (
+                  <span className="hidden sm:inline text-xs font-semibold">{filterRules.length}</span>
+                )}
+              </button>
+
+              <button
+                onClick={() => setShowSortModal(true)}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 text-sm font-medium rounded-lg transition-all hover:scale-105 ${
+                  sortRules.length > 0
+                    ? 'bg-monday-primaryLight dark:bg-monday-primary/20 text-monday-primary dark:text-monday-primary border border-monday-primary/30'
+                    : 'bg-white dark:bg-monday-dark hover:bg-monday-background dark:hover:bg-gray-800 text-monday-text dark:text-white border border-monday-border dark:border-gray-700'
+                }`}
+                title={`Sort${sortRules.length > 0 ? ` (${sortRules.length} active)` : ''}`}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+                </svg>
+                {sortRules.length > 0 && (
+                  <span className="hidden sm:inline text-xs font-semibold">{sortRules.length}</span>
+                )}
+              </button>
+            </div>
+
+            {/* More Actions Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setShowMoreMenu(!showMoreMenu)}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white dark:bg-monday-dark hover:bg-monday-background dark:hover:bg-gray-800 text-monday-text dark:text-white text-sm font-medium rounded-lg border border-monday-border dark:border-gray-700 transition-all hover:scale-105"
+                title="More actions"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                </svg>
+                <span className="hidden sm:inline">More</span>
+                <svg className={`w-3 h-3 transition-transform ${showMoreMenu ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {showMoreMenu && (
+                <>
+                  <div 
+                    className="fixed inset-0 z-40" 
+                    onClick={() => setShowMoreMenu(false)}
+                  ></div>
+                  <div className="absolute left-0 top-full mt-1 w-56 bg-white dark:bg-monday-darkLight rounded-lg shadow-lg border border-monday-border dark:border-gray-700 z-50 py-1">
+                    <button
+                      onClick={() => {
+                        navigate(`/forms/board/${boardId}`)
+                        setShowMoreMenu(false)
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-monday-text dark:text-white hover:bg-monday-background dark:hover:bg-gray-800 flex items-center gap-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      Forms
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowAIAssistant(true)
+                        setShowMoreMenu(false)
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-monday-text dark:text-white hover:bg-monday-background dark:hover:bg-gray-800 flex items-center gap-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                      </svg>
+                      AI Assistant
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowAutomations(true)
+                        setShowMoreMenu(false)
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-monday-text dark:text-white hover:bg-monday-background dark:hover:bg-gray-800 flex items-center gap-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                      Automations
+                    </button>
+                    <div className="border-t border-monday-border dark:border-gray-700 my-1"></div>
+                    <button
+                      onClick={() => {
+                        setShowGuestAccess(true)
+                        setShowMoreMenu(false)
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-monday-text dark:text-white hover:bg-monday-background dark:hover:bg-gray-800 flex items-center gap-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                      </svg>
+                      Guest Access
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowRecurringTasks(true)
+                        setShowMoreMenu(false)
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-monday-text dark:text-white hover:bg-monday-background dark:hover:bg-gray-800 flex items-center gap-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Recurring Tasks
+                    </button>
+                    <div className="border-t border-monday-border dark:border-gray-700 my-1"></div>
+                    <button
+                      onClick={() => {
+                        setShowImport(true)
+                        setShowMoreMenu(false)
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-monday-text dark:text-white hover:bg-monday-background dark:hover:bg-gray-800 flex items-center gap-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                      </svg>
+                      Import
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowExport(true)
+                        setShowMoreMenu(false)
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-monday-text dark:text-white hover:bg-monday-background dark:hover:bg-gray-800 flex items-center gap-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      Export
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
 
-          <div className="flex items-center space-x-2 flex-shrink-0">
-            <span className="text-xs text-monday-textLight dark:text-gray-400 hidden md:inline">
+          {/* Right Side - Stats & Menu */}
+          <div className="flex items-center gap-3 flex-shrink-0">
+            <span className="text-xs text-monday-textLight dark:text-gray-400 hidden lg:inline whitespace-nowrap">
               {board.groups?.reduce((total, group) => total + (group.items?.length || 0), 0)} items
             </span>
-            <div className="w-px h-4 bg-monday-border dark:bg-gray-700 hidden md:block"></div>
             <button
               onClick={() => setShowBoardMenu(!showBoardMenu)}
-              className="p-1.5 rounded hover:bg-monday-background dark:hover:bg-gray-800 transition-colors"
+              className="p-1.5 rounded-lg hover:bg-monday-background dark:hover:bg-gray-800 transition-colors"
               title="Board options"
+              aria-label="Board options"
             >
               <svg className="w-5 h-5 text-monday-textLight dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
@@ -431,21 +554,3 @@ export default function BoardView() {
   )
 }
 
-interface QuickActionButtonProps {
-  icon: React.ReactNode
-  label: string
-  onClick: () => void
-}
-
-function QuickActionButton({ icon, label, onClick }: QuickActionButtonProps) {
-  return (
-    <button
-      onClick={onClick}
-      className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-monday-text dark:text-white bg-white dark:bg-monday-dark hover:bg-monday-background dark:hover:bg-gray-800 border border-monday-border dark:border-gray-700 rounded-lg transition-all hover:scale-105 hover:shadow-md whitespace-nowrap"
-      title={label}
-    >
-      {icon}
-      <span className="hidden sm:inline">{label}</span>
-    </button>
-  )
-}
