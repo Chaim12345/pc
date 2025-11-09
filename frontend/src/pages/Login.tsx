@@ -51,17 +51,9 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex bg-[#f6f7fb]">
-      {/* Skip to main content link for accessibility */}
-      <a
-        href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-[#0073ea] text-white px-4 py-2 rounded-lg z-50"
-      >
-        Skip to main content
-      </a>
-
+    <div className="min-h-screen flex bg-[#f6f7fb] dark:bg-[#0f0f11]">
       {/* Left Panel - Login Form */}
-      <main id="main-content" className="flex-1 flex items-center justify-center px-8 py-12" role="main">
+      <div className="flex-1 flex items-center justify-center px-8 py-12">
         <div className="w-full max-w-md">
           {/* Logo and Brand */}
           <div className="text-center mb-8">
@@ -70,21 +62,17 @@ export default function Login() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <h1 className="text-3xl font-bold text-[#323338] mb-2">Welcome back</h1>
-            <p className="text-[#676879] text-base">Log in to your account to continue</p>
+            <h1 className="text-3xl font-bold text-[#323338] dark:text-white mb-2">Welcome back</h1>
+            <p className="text-[#676879] dark:text-[#d1d5db] text-base">Log in to your account to continue</p>
           </div>
 
           {/* Login Form Card */}
-          <div className="bg-white rounded-2xl shadow-lg p-8">
+          <div className="bg-white dark:bg-[#18181b] rounded-2xl shadow-lg p-8 border border-[#e6e9ef] dark:border-[#3f3f46]">
             {!twoFactorRequired ? (
               <form onSubmit={handleSubmit} className="space-y-6">
                 {error && (
-                  <div
-                    className="bg-[#ffe5e9] border border-[#e2445c] text-[#d83a52] px-4 py-3 rounded-lg flex items-start text-sm"
-                    role="alert"
-                    aria-live="assertive"
-                  >
-                    <svg className="w-5 h-5 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                  <div className="bg-[#ffe5e9] border border-[#e2445c] text-[#d83a52] px-4 py-3 rounded-lg flex items-start text-sm">
+                    <svg className="w-5 h-5 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                     </svg>
                     <span>{error}</span>
@@ -92,7 +80,7 @@ export default function Login() {
                 )}
 
                 <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-[#323338] mb-2">
+                  <label htmlFor="email" className="block text-sm font-medium text-[#323338] dark:text-white mb-2">
                     Work email
                   </label>
                   <div className="relative">
@@ -102,12 +90,13 @@ export default function Login() {
                       type="email"
                       autoComplete="email"
                       required
-                      className="w-full px-4 py-3 pl-11 text-base border border-[#e6e9ef] rounded-lg bg-white text-[#323338] placeholder-[#9699a6] focus:outline-none focus:border-[#0073ea] focus:ring-2 focus:ring-[#cce5ff] transition-all"
+                      className="w-full px-4 py-3 pl-11 text-base border border-[#e6e9ef] dark:border-[#3f3f46] rounded-lg bg-white dark:bg-[#27272a] text-[#323338] dark:text-white placeholder-[#9699a6] dark:placeholder-[#9ca3af] focus:outline-none focus:border-[#0073ea] dark:focus:border-[#60a5fa] focus:ring-2 focus:ring-[#cce5ff] dark:focus:ring-[#3b82f6]/30 transition-all"
                       placeholder="name@company.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
+                      aria-label="Work email address"
                     />
-                    <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#9699a6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#9699a6] dark:text-[#9ca3af]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                     </svg>
                   </div>
@@ -115,10 +104,10 @@ export default function Login() {
 
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <label htmlFor="password" className="block text-sm font-medium text-[#323338]">
+                    <label htmlFor="password" className="block text-sm font-medium text-[#323338] dark:text-white">
                       Password
                     </label>
-                    <a href="#" className="text-sm font-medium text-[#0073ea] hover:text-[#0060c0] transition-colors">
+                    <a href="#" className="text-sm font-medium text-[#0073ea] dark:text-[#60a5fa] hover:text-[#0060c0] dark:hover:text-[#93c5fd] transition-colors">
                       Forgot password?
                     </a>
                   </div>
@@ -129,20 +118,20 @@ export default function Login() {
                       type={showPassword ? 'text' : 'password'}
                       autoComplete="current-password"
                       required
-                      className="w-full px-4 py-3 pl-11 pr-11 text-base border border-[#e6e9ef] rounded-lg bg-white text-[#323338] placeholder-[#9699a6] focus:outline-none focus:border-[#0073ea] focus:ring-2 focus:ring-[#cce5ff] transition-all"
+                      className="w-full px-4 py-3 pl-11 pr-11 text-base border border-[#e6e9ef] dark:border-[#3f3f46] rounded-lg bg-white dark:bg-[#27272a] text-[#323338] dark:text-white placeholder-[#9699a6] dark:placeholder-[#9ca3af] focus:outline-none focus:border-[#0073ea] dark:focus:border-[#60a5fa] focus:ring-2 focus:ring-[#cce5ff] dark:focus:ring-[#3b82f6]/30 transition-all"
                       placeholder="Enter your password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
+                      aria-label="Password"
                     />
-                    <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#9699a6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#9699a6] dark:text-[#9ca3af]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                     </svg>
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-[#9699a6] hover:text-[#323338] transition-colors"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-[#9699a6] dark:text-[#9ca3af] hover:text-[#323338] dark:hover:text-white transition-colors"
                       aria-label={showPassword ? "Hide password" : "Show password"}
-                      aria-pressed={showPassword}
                     >
                       {showPassword ? (
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -165,7 +154,7 @@ export default function Login() {
                     type="checkbox"
                     className="h-4 w-4 text-[#0073ea] border-[#e6e9ef] rounded focus:ring-[#cce5ff] cursor-pointer"
                   />
-                  <label htmlFor="remember" className="ml-2 block text-sm text-[#676879] cursor-pointer">
+                  <label htmlFor="remember" className="ml-2 block text-sm text-[#676879] dark:text-[#d1d5db] cursor-pointer">
                     Keep me logged in
                   </label>
                 </div>
@@ -201,17 +190,13 @@ export default function Login() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                     </svg>
                   </div>
-                  <h2 className="text-xl font-bold text-[#323338] mb-2">Two-Factor Authentication</h2>
-                  <p className="text-sm text-[#676879]">Enter the verification code from your authenticator app</p>
+                  <h2 className="text-xl font-bold text-[#323338] dark:text-white mb-2">Two-Factor Authentication</h2>
+                  <p className="text-sm text-[#676879] dark:text-[#d1d5db]">Enter the verification code from your authenticator app</p>
                 </div>
                 
                 {error && (
-                  <div
-                    className="bg-[#ffe5e9] border border-[#e2445c] text-[#d83a52] px-4 py-3 rounded-lg flex items-start text-sm"
-                    role="alert"
-                    aria-live="assertive"
-                  >
-                    <svg className="w-5 h-5 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                  <div className="bg-[#ffe5e9] border border-[#e2445c] text-[#d83a52] px-4 py-3 rounded-lg flex items-start text-sm">
+                    <svg className="w-5 h-5 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                     </svg>
                     <span>{error}</span>
@@ -219,7 +204,7 @@ export default function Login() {
                 )}
 
                 <div>
-                  <label htmlFor="twoFactorToken" className="block text-sm font-medium text-[#323338] mb-2">
+                  <label htmlFor="twoFactorToken" className="block text-sm font-medium text-[#323338] dark:text-white mb-2">
                     Verification Code
                   </label>
                   <input
@@ -229,12 +214,13 @@ export default function Login() {
                     autoComplete="one-time-code"
                     required
                     maxLength={6}
-                    className="w-full px-4 py-3 text-center text-2xl tracking-[0.5em] font-mono border border-[#e6e9ef] rounded-lg bg-white text-[#323338] placeholder-[#9699a6] focus:outline-none focus:border-[#0073ea] focus:ring-2 focus:ring-[#cce5ff] transition-all"
+                    className="w-full px-4 py-3 text-center text-2xl tracking-[0.5em] font-mono border border-[#e6e9ef] dark:border-[#3f3f46] rounded-lg bg-white dark:bg-[#27272a] text-[#323338] dark:text-white placeholder-[#9699a6] dark:placeholder-[#9ca3af] focus:outline-none focus:border-[#0073ea] dark:focus:border-[#60a5fa] focus:ring-2 focus:ring-[#cce5ff] dark:focus:ring-[#3b82f6]/30 transition-all"
                     placeholder="000000"
                     value={twoFactorToken}
                     onChange={(e) => setTwoFactorToken(e.target.value.replace(/\D/g, ''))}
+                    aria-label="Two-factor authentication code"
                   />
-                  <p className="text-xs text-[#676879] mt-2 text-center">Enter the 6-digit code from your authenticator app</p>
+                  <p className="text-xs text-[#676879] dark:text-[#d1d5db] mt-2 text-center">Enter the 6-digit code from your authenticator app</p>
                 </div>
 
                 <button
@@ -263,9 +249,9 @@ export default function Login() {
                     setTempToken('')
                     setError('')
                   }}
-                  className="w-full py-2 px-4 text-sm text-[#676879] hover:text-[#323338] transition-colors"
+                  className="w-full py-2 px-4 text-sm text-[#676879] dark:text-[#d1d5db] hover:text-[#323338] dark:hover:text-white transition-colors"
                 >
-                  ? Back to login
+                  ← Back to login
                 </button>
               </form>
             )}
@@ -277,16 +263,13 @@ export default function Login() {
                     <div className="w-full border-t border-[#e6e9ef]"></div>
                   </div>
                   <div className="relative flex justify-center text-sm">
-                    <span className="px-4 bg-white text-[#9699a6]">Or continue with</span>
+                    <span className="px-4 bg-white dark:bg-[#18181b] text-[#9699a6] dark:text-[#9ca3af]">Or continue with</span>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
-                  <button
-                    className="flex items-center justify-center px-4 py-2.5 border border-[#e6e9ef] rounded-lg text-sm font-medium text-[#323338] hover:bg-[#f6f7fb] transition-all"
-                    aria-label="Continue with Google"
-                  >
-                    <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" aria-hidden="true">
+                  <button className="flex items-center justify-center px-4 py-2.5 border border-[#e6e9ef] dark:border-[#3f3f46] rounded-lg text-sm font-medium text-[#323338] dark:text-white hover:bg-[#f6f7fb] dark:hover:bg-[#27272a] transition-all" aria-label="Sign in with Google">
+                    <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
                       <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                       <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
                       <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
@@ -294,20 +277,17 @@ export default function Login() {
                     </svg>
                     Google
                   </button>
-                  <button
-                    className="flex items-center justify-center px-4 py-2.5 border border-[#e6e9ef] rounded-lg text-sm font-medium text-[#323338] hover:bg-[#f6f7fb] transition-all"
-                    aria-label="Continue with Microsoft"
-                  >
-                    <svg className="w-5 h-5 mr-2" fill="#1877F2" viewBox="0 0 24 24" aria-hidden="true">
+                  <button className="flex items-center justify-center px-4 py-2.5 border border-[#e6e9ef] dark:border-[#3f3f46] rounded-lg text-sm font-medium text-[#323338] dark:text-white hover:bg-[#f6f7fb] dark:hover:bg-[#27272a] transition-all" aria-label="Sign in with Microsoft">
+                    <svg className="w-5 h-5 mr-2" fill="#1877F2" viewBox="0 0 24 24">
                       <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
                     </svg>
                     Microsoft
                   </button>
                 </div>
 
-                <div className="text-center mt-6 pt-6 border-t border-[#e6e9ef]">
-                  <span className="text-sm text-[#676879]">Don't have an account? </span>
-                  <Link to="/register" className="text-sm font-semibold text-[#0073ea] hover:text-[#0060c0] transition-colors">
+                <div className="text-center mt-6 pt-6 border-t border-[#e6e9ef] dark:border-[#3f3f46]">
+                  <span className="text-sm text-[#676879] dark:text-[#d1d5db]">Don't have an account? </span>
+                  <Link to="/register" className="text-sm font-semibold text-[#0073ea] dark:text-[#60a5fa] hover:text-[#0060c0] dark:hover:text-[#93c5fd] transition-colors">
                     Sign up for free
                   </Link>
                 </div>
@@ -318,7 +298,7 @@ export default function Login() {
       </div>
 
       {/* Right Panel - Feature Showcase */}
-      <aside className="hidden lg:flex flex-1 bg-gradient-to-br from-[#0073ea] to-[#0050a0] items-center justify-center px-8 py-12" role="complementary" aria-label="Features showcase">
+      <div className="hidden lg:flex flex-1 bg-gradient-to-br from-[#0073ea] to-[#0050a0] items-center justify-center px-8 py-12">
         <div className="max-w-lg">
           <h2 className="text-4xl font-bold text-white mb-6">
             Work OS that powers teams to run processes, projects and workflows

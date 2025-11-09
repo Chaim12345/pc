@@ -30,95 +30,65 @@ export default function ViewSelector({ board, filterRules = [], sortRules = [] }
   return (
     <div className="flex flex-col h-full">
       {/* View Tabs */}
-      <nav className="flex space-x-2 mb-4 flex-wrap gap-2" role="tablist" aria-label="Board view options">
+      <div className="flex space-x-2 mb-4 flex-wrap gap-2">
         <button
           onClick={() => setView('table')}
           className={viewButtonClass(view === 'table')}
-          role="tab"
-          aria-selected={view === 'table'}
-          aria-controls="table-view"
-          id="table-tab"
         >
           Table
         </button>
         <button
           onClick={() => setView('kanban')}
           className={viewButtonClass(view === 'kanban')}
-          role="tab"
-          aria-selected={view === 'kanban'}
-          aria-controls="kanban-view"
-          id="kanban-tab"
         >
           Kanban
         </button>
         <button
           onClick={() => setView('calendar')}
           className={viewButtonClass(view === 'calendar')}
-          role="tab"
-          aria-selected={view === 'calendar'}
-          aria-controls="calendar-view"
-          id="calendar-tab"
         >
           Calendar
         </button>
         <button
           onClick={() => setView('gantt')}
           className={viewButtonClass(view === 'gantt')}
-          role="tab"
-          aria-selected={view === 'gantt'}
-          aria-controls="gantt-view"
-          id="gantt-tab"
         >
           Gantt
         </button>
         <button
           onClick={() => setView('timeline')}
           className={viewButtonClass(view === 'timeline')}
-          role="tab"
-          aria-selected={view === 'timeline'}
-          aria-controls="timeline-view"
-          id="timeline-tab"
         >
           Timeline
         </button>
-      </nav>
+      </div>
 
       {/* View Content */}
-      <div className="flex-1 min-h-0 overflow-hidden" role="tabpanel">
+      <div className="flex-1 min-h-0 overflow-hidden">
         {view === 'table' && (
-          <div id="table-view" role="region" aria-labelledby="table-tab" aria-hidden={view !== 'table'}>
-            <Suspense fallback={<div className="flex items-center justify-center h-64" role="status" aria-live="polite">Loading Table View...</div>}>
-              <TableView board={board} filterRules={filterRules} sortRules={sortRules} />
-            </Suspense>
-          </div>
+          <Suspense fallback={<div className="flex items-center justify-center h-64">Loading Table View...</div>}>
+            <TableView board={board} filterRules={filterRules} sortRules={sortRules} />
+          </Suspense>
         )}
         {view === 'kanban' && (
-          <div id="kanban-view" role="region" aria-labelledby="kanban-tab" aria-hidden={view !== 'kanban'}>
-            <Suspense fallback={<div className="flex items-center justify-center h-64" role="status" aria-live="polite">Loading Kanban View...</div>}>
-              <KanbanView board={board} filterRules={filterRules} sortRules={sortRules} />
-            </Suspense>
-          </div>
+          <Suspense fallback={<div className="flex items-center justify-center h-64">Loading Kanban View...</div>}>
+            <KanbanView board={board} filterRules={filterRules} sortRules={sortRules} />
+          </Suspense>
         )}
         {view === 'calendar' && (
-          <div id="calendar-view" role="region" aria-labelledby="calendar-tab" aria-hidden={view !== 'calendar'}>
-            <Suspense fallback={<div className="flex items-center justify-center h-64" role="status" aria-live="polite">Loading Calendar View...</div>}>
-              <CalendarView board={board} filterRules={filterRules} sortRules={sortRules} />
-            </Suspense>
-          </div>
+          <Suspense fallback={<div className="flex items-center justify-center h-64">Loading Calendar View...</div>}>
+            <CalendarView board={board} filterRules={filterRules} sortRules={sortRules} />
+          </Suspense>
         )}
         {view === 'gantt' && (
-          <div id="gantt-view" role="region" aria-labelledby="gantt-tab" aria-hidden={view !== 'gantt'}>
-            <Suspense fallback={<div className="flex items-center justify-center h-64" role="status" aria-live="polite">Loading Gantt View...</div>}>
-              <GanttView board={board} filterRules={filterRules} sortRules={sortRules} />
-            </Suspense>
-          </div>
+          <Suspense fallback={<div className="flex items-center justify-center h-64">Loading Gantt View...</div>}>
+            <GanttView board={board} filterRules={filterRules} sortRules={sortRules} />
+          </Suspense>
         )}
         {view === 'timeline' && (
-          <div id="timeline-view" role="region" aria-labelledby="timeline-tab" aria-hidden={view !== 'timeline'}>
-            <Suspense fallback={<div className="flex items-center justify-center h-64" role="status" aria-live="polite">Loading Timeline View...</div>}>
-              <TimelineView board={board} filterRules={filterRules} sortRules={sortRules} />
-            </Suspense>
-          </div>
+          <Suspense fallback={<div className="flex items-center justify-center h-64">Loading Timeline View...</div>}>
+            <TimelineView board={board} filterRules={filterRules} sortRules={sortRules} />
+          </Suspense>
         )}
       </div>
     </div>

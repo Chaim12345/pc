@@ -152,3 +152,5 @@ const TwoFactorAuthSetup = ({ onClose }: Props) => {
 export default TwoFactorAuthSetup;
 
 
+
+
