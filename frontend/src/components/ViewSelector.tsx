@@ -14,9 +14,10 @@ interface ViewSelectorProps {
   board: Board
   filterRules?: FilterRule[]
   sortRules?: SortRule[]
+  onSortChange?: (rules: SortRule[]) => void
 }
 
-export default function ViewSelector({ board, filterRules = [], sortRules = [] }: ViewSelectorProps) {
+export default function ViewSelector({ board, filterRules = [], sortRules = [], onSortChange }: ViewSelectorProps) {
   const [view, setView] = useState<'table' | 'kanban' | 'calendar' | 'gantt' | 'timeline'>('table')
 
   const viewButtonClass = (isActive: boolean) => `
@@ -67,7 +68,7 @@ export default function ViewSelector({ board, filterRules = [], sortRules = [] }
       <div className="flex-1 min-h-0 overflow-hidden">
         {view === 'table' && (
           <Suspense fallback={<div className="flex items-center justify-center h-64">Loading Table View...</div>}>
-            <TableView board={board} filterRules={filterRules} sortRules={sortRules} />
+            <TableView board={board} filterRules={filterRules} sortRules={sortRules} onSortChange={onSortChange} />
           </Suspense>
         )}
         {view === 'kanban' && (

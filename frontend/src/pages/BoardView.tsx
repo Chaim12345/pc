@@ -393,7 +393,12 @@ export default function BoardView() {
       {/* Main Content */}
       <main className="flex-1 flex flex-col overflow-hidden p-6 min-h-0">
         <div className="flex-1 min-h-0 overflow-hidden">
-          <ViewSelector board={board} filterRules={filterRules} sortRules={sortRules} />
+          <ViewSelector 
+            board={board} 
+            filterRules={filterRules} 
+            sortRules={sortRules}
+            onSortChange={setSortRules}
+          />
         </div>
       </main>
 

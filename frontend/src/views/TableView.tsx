@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { useMutation, useQueryClient, UseMutationResult } from '@tanstack/react-query'
 import { Board, Item, Column, Group, User, ColumnType } from '@monday-clone/shared'
 import { api } from '../services/api'
@@ -11,18 +11,95 @@ import DatePickerColumn from '../components/DatePickerColumn'
 import PersonSelector from '../components/PersonSelector'
 import FileUploadColumn from '../components/FileUploadColumn'
 import ItemRow from '../components/ItemRow';
+import { SortRule } from '../components/SortModal'
 
 interface TableViewProps {
   board: Board
+  sortRules?: SortRule[]
+  onSortChange?: (rules: SortRule[]) => void
 }
 
-export default function TableView({ board }: TableViewProps) {
+export default function TableView({ board, sortRules = [], onSortChange }: TableViewProps) {
   const { socket } = useSocket()
   const queryClient = useQueryClient()
   const [editingCell, setEditingCell] = useState<{ itemId: string; columnId: string } | null>(null)
   const [editValue, setEditValue] = useState<any>(null)
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
   const [showAddItemModal, setShowAddItemModal] = useState<{ groupId: string; name: string } | null>(null)
+
+  // Handle column header click for sorting
+  const handleColumnSort = (columnId: string) => {
+    const existingRule = sortRules.find(rule => rule.columnId === columnId)
+    let newRules: SortRule[] = []
+
+    if (existingRule) {
+      // Toggle direction: asc -> desc -> remove
+      if (existingRule.direction === 'asc') {
+        // Change to desc
+        newRules = sortRules.map(rule =>
+          rule.columnId === columnId ? { ...rule, direction: 'desc' } : rule
+        )
+      } else {
+        // Remove sort
+        newRules = sortRules.filter(rule => rule.columnId !== columnId)
+      }
+    } else {
+      // Add new sort (asc by default)
+      newRules = [{ id: Date.now().toString(), columnId, direction: 'asc' }, ...sortRules]
+    }
+
+    onSortChange?.(newRules)
+  }
+
+  // Get sort direction for a column
+  const getSortDirection = (columnId: string): 'asc' | 'desc' | null => {
+    const rule = sortRules.find(rule => rule.columnId === columnId)
+    return rule ? rule.direction : null
+  }
+
+  // Sort items based on sortRules
+  const sortItems = (items: Item[]): Item[] => {
+    if (sortRules.length === 0) return items
+
+    return [...items].sort((a, b) => {
+      for (const rule of sortRules) {
+        const aValue = getColumnValue(a, rule.columnId)
+        const bValue = getColumnValue(b, rule.columnId)
+
+        // Handle different value types
+        let comparison = 0
+
+        if (aValue === null || aValue === undefined) {
+          comparison = bValue === null || bValue === undefined ? 0 : 1
+        } else if (bValue === null || bValue === undefined) {
+          comparison = -1
+        } else if (typeof aValue === 'object' && aValue !== null) {
+          // Handle status, priority, person objects
+          const aLabel = aValue.label || aValue.name || String(aValue)
+          const bLabel = bValue.label || bValue.name || String(bValue)
+          comparison = aLabel.localeCompare(bLabel)
+        } else if (typeof aValue === 'number' && typeof bValue === 'number') {
+          comparison = aValue - bValue
+        } else if (typeof aValue === 'string' && typeof bValue === 'string') {
+          // Try to parse as date
+          const aDate = new Date(aValue)
+          const bDate = new Date(bValue)
+          if (!isNaN(aDate.getTime()) && !isNaN(bDate.getTime())) {
+            comparison = aDate.getTime() - bDate.getTime()
+          } else {
+            comparison = aValue.localeCompare(bValue)
+          }
+        } else {
+          comparison = String(aValue).localeCompare(String(bValue))
+        }
+
+        if (comparison !== 0) {
+          return rule.direction === 'asc' ? comparison : -comparison
+        }
+      }
+      return 0
+    })
+  }
 
   const updateItemMutation = useMutation({
     mutationFn: async ({ itemId, updates }: { itemId: string; updates: any }) => {
@@ -333,24 +410,57 @@ export default function TableView({ board }: TableViewProps) {
                   <span>Item</span>
                 </div>
               </th>
-              {board.columns?.map((column) => (
-                <th
-                  key={column.id}
-                  className="px-6 py-4 text-left text-xs font-bold text-monday-text dark:text-white uppercase tracking-wider min-w-[200px] hover:bg-monday-background/30 dark:hover:bg-gray-800/30 transition-colors group"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      {getColumnIcon(column.type, column.title)}
-                      <span>{column.title}</span>
+              {board.columns?.map((column) => {
+                const sortDirection = getSortDirection(column.id)
+                const isSorted = sortDirection !== null
+                
+                return (
+                  <th
+                    key={column.id}
+                    className={`px-6 py-4 text-left text-xs font-bold text-monday-text dark:text-white uppercase tracking-wider min-w-[200px] hover:bg-monday-background/30 dark:hover:bg-gray-800/30 transition-colors group cursor-pointer select-none ${
+                      isSorted ? 'bg-monday-primaryLight/20 dark:bg-monday-primary/10' : ''
+                    }`}
+                    onClick={() => handleColumnSort(column.id)}
+                    title={`Click to sort${isSorted ? ` (${sortDirection === 'asc' ? 'ascending' : 'descending'})` : ''}`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2 flex-1">
+                        {getColumnIcon(column.type, column.title)}
+                        <span>{column.title}</span>
+                        {isSorted && (
+                          <span className="ml-1 text-monday-primary dark:text-monday-primary">
+                            {sortDirection === 'asc' ? (
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                              </svg>
+                            ) : (
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                            )}
+                          </span>
+                        )}
+                        {!isSorted && (
+                          <svg className="w-3 h-3 opacity-0 group-hover:opacity-50 text-monday-textLight dark:text-gray-400 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                          </svg>
+                        )}
+                      </div>
+                      <button 
+                        className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-all ml-2" 
+                        title="Column options"
+                        onClick={(e) => {
+                          e.stopPropagation() // Prevent triggering sort
+                        }}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                        </svg>
+                      </button>
                     </div>
-                    <button className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-all" title="Column options">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-                      </svg>
-                    </button>
-                  </div>
-                </th>
-              ))}
+                  </th>
+                )
+              })}
             </tr>
           </thead>
           <tbody>
@@ -380,8 +490,8 @@ export default function TableView({ board }: TableViewProps) {
                   </td>
                 </tr>
                 
-                {/* Group Items */}
-                {group.items?.filter(item => !item.parentId).map((item, itemIndex) => (
+                {/* Group Items - Sorted */}
+                {sortItems(group.items?.filter(item => !item.parentId) || []).map((item, itemIndex) => (
                   <ItemRow
                     key={item.id}
                     item={item}
