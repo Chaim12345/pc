@@ -3,12 +3,13 @@ import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, closestCenter, u
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query'
 import { Board, Item, Column, Group } from '@monday-clone/shared'
 import { api } from '../services/api'
 import { useSocket } from '../contexts/SocketContext'
 import { useToast } from '../contexts/ToastContext'
 import { SocketEvent } from '@monday-clone/shared'
+import ItemDetailModal from '../components/ItemDetailModal'
 
 interface KanbanViewProps {
   board: Board
@@ -18,23 +19,28 @@ interface KanbanColumnProps {
   label: any
   column: Column
   items: Item[]
+  boardId: string
   onItemMove: (itemId: string, columnId: string, position: number) => void
   onAddItem: (name: string, statusLabel: any) => void
   onEditName: (itemId: string, newName: string) => void
   onDelete: (itemId: string) => void
   onDuplicate: (itemId: string) => void
+  onItemClick?: (itemId: string) => void
 }
 
 interface KanbanItemProps {
   item: Item
   column: Column
+  boardId: string
   isDragging?: boolean
   onEditName: (itemId: string, newName: string) => void
   onDelete: (itemId: string) => void
   onDuplicate: (itemId: string) => void
+  onItemClick?: (itemId: string) => void
+  commentCount?: number
 }
 
-function KanbanItem({ item, column, isDragging = false, onEditName, onDelete, onDuplicate }: KanbanItemProps) {
+function KanbanItem({ item, column, boardId, isDragging = false, onEditName, onDelete, onDuplicate, onItemClick, commentCount = 0 }: KanbanItemProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [editedName, setEditedName] = useState(item.name)
   const [showMenu, setShowMenu] = useState(false)
@@ -45,8 +51,9 @@ function KanbanItem({ item, column, isDragging = false, onEditName, onDelete, on
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isItemDragging ? 0.5 : 1,
+    transition: isItemDragging ? 'none' : transition || 'transform 200ms ease, opacity 200ms ease',
+    opacity: isItemDragging ? 0.4 : 1,
+    scale: isItemDragging ? 0.95 : 1,
   }
 
   const columnValue = item.columnValues?.find((cv) => cv.columnId === column.id)
@@ -73,13 +80,22 @@ function KanbanItem({ item, column, isDragging = false, onEditName, onDelete, on
     }
   }
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Don't open modal if clicking on drag handle, menu, or editing
+    if (isEditing || showMenu) return
+    const target = e.target as HTMLElement
+    if (target.closest('[data-drag-handle]') || target.closest('[data-menu-button]')) return
+    onItemClick?.(item.id)
+  }
+
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className={`bg-white dark:bg-monday-dark p-4 rounded-lg shadow-sm hover:shadow-monday transition-all mb-3 border-2 border-transparent hover:border-monday-primary/30 group relative ${
-        isDragging ? 'rotate-3 scale-105 shadow-2xl' : ''
-      }`}
+      onClick={handleCardClick}
+      className={`bg-white dark:bg-monday-dark p-4 rounded-xl shadow-sm hover:shadow-lg transition-all duration-200 mb-3 border-2 border-transparent hover:border-monday-primary/30 group relative cursor-pointer transform hover:scale-[1.02] ${
+        isDragging ? 'rotate-2 scale-110 shadow-2xl z-50' : ''
+      } ${isItemDragging ? 'opacity-40 scale-95' : ''}`}
     >
       {/* Item Name */}
       {isEditing ? (
@@ -89,7 +105,7 @@ function KanbanItem({ item, column, isDragging = false, onEditName, onDelete, on
           onChange={(e) => setEditedName(e.target.value)}
           onBlur={handleNameSave}
           onKeyDown={handleNameKeyDown}
-          className="w-full font-semibold text-monday-text dark:text-white mb-3 px-2 py-1 border-2 border-monday-primary rounded focus:outline-none"
+          className="w-full font-semibold text-monday-text dark:text-white mb-3 px-2 py-1 border-2 border-monday-primary rounded focus:outline-none bg-white dark:bg-monday-dark"
           autoFocus
           onClick={(e) => e.stopPropagation()}
         />
@@ -97,8 +113,12 @@ function KanbanItem({ item, column, isDragging = false, onEditName, onDelete, on
         <div
           {...attributes}
           {...listeners}
-          onClick={handleNameClick}
-          className="font-semibold text-monday-text dark:text-white mb-3 group-hover:text-monday-primary transition-colors cursor-grab active:cursor-grabbing"
+          data-drag-handle
+          onClick={(e) => {
+            e.stopPropagation()
+            handleNameClick(e)
+          }}
+          className="font-semibold text-monday-text dark:text-white mb-3 group-hover:text-monday-primary transition-colors cursor-grab active:cursor-grabbing select-none"
         >
           {item.name}
         </div>
@@ -128,22 +148,26 @@ function KanbanItem({ item, column, isDragging = false, onEditName, onDelete, on
             {item.name.charAt(0).toUpperCase()}
           </div>
           {/* Comments indicator */}
-          <div className="flex items-center space-x-1 text-xs text-monday-textLight dark:text-gray-500">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-            </svg>
-            <span>0</span>
-          </div>
+          {commentCount > 0 && (
+            <div className="flex items-center space-x-1 text-xs text-monday-textLight dark:text-gray-400 bg-monday-background dark:bg-gray-800 px-2 py-1 rounded-full">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+              </svg>
+              <span className="font-medium">{commentCount}</span>
+            </div>
+          )}
         </div>
 
         {/* Action button with menu */}
         <div className="relative">
           <button 
+            data-menu-button
             onClick={(e) => {
               e.stopPropagation()
               setShowMenu(!showMenu)
             }}
-            className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-all"
+            className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-all"
+            aria-label="Item options"
           >
             <svg className="w-4 h-4 text-monday-textLight" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
@@ -199,7 +223,7 @@ function KanbanItem({ item, column, isDragging = false, onEditName, onDelete, on
   )
 }
 
-function KanbanColumn({ label, column, items, onItemMove, onAddItem, onEditName, onDelete, onDuplicate }: KanbanColumnProps) {
+function KanbanColumn({ label, column, items, boardId, onItemMove, onAddItem, onEditName, onDelete, onDuplicate, onItemClick }: KanbanColumnProps) {
   const [showAddForm, setShowAddForm] = useState(false)
   const [newItemName, setNewItemName] = useState('')
   const itemIds = items.map((item) => item.id)
@@ -237,8 +261,8 @@ function KanbanColumn({ label, column, items, onItemMove, onAddItem, onEditName,
   return (
     <div
       ref={setNodeRef}
-      className={`flex-shrink-0 w-[21rem] bg-monday-background dark:bg-monday-darkLight rounded-xl p-4 border-2 border-gray-200 dark:border-gray-700 hover:border-monday-primary/30 transition-all ${
-        isOver ? 'border-monday-primary shadow-monday-hover' : ''
+      className={`flex-shrink-0 w-[21rem] bg-monday-background dark:bg-monday-darkLight rounded-xl p-4 border-2 border-gray-200 dark:border-gray-700 hover:border-monday-primary/30 transition-all duration-200 ${
+        isOver ? 'border-monday-primary shadow-lg bg-monday-primaryLight/5 dark:bg-monday-primary/10 scale-[1.02]' : ''
       }`}
     >
       {/* Column Header */}
@@ -300,10 +324,13 @@ function KanbanColumn({ label, column, items, onItemMove, onAddItem, onEditName,
               <KanbanItem 
                 key={item.id} 
                 item={item} 
-                column={column} 
+                column={column}
+                boardId={board.id}
                 onEditName={onEditName} 
                 onDelete={onDelete} 
-                onDuplicate={onDuplicate} 
+                onDuplicate={onDuplicate}
+                onItemClick={onItemClick}
+                commentCount={item.comments?.length || 0}
               />
             ))
           ) : (
@@ -328,6 +355,7 @@ export default function KanbanView({ board }: KanbanViewProps) {
   const { showToast } = useToast()
   const queryClient = useQueryClient()
   const [activeItem, setActiveItem] = useState<Item | null>(null)
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
 
   // Find status column
   const statusColumn = board.columns?.find((col) => col.type === 'STATUS')
@@ -455,6 +483,10 @@ export default function KanbanView({ board }: KanbanViewProps) {
       ?.flatMap((g) => g.items || [])
       .find((item) => item.id === itemId)
     setActiveItem(item || null)
+    // Close item detail modal if open
+    if (selectedItemId === itemId) {
+      setSelectedItemId(null)
+    }
   }
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -569,12 +601,13 @@ export default function KanbanView({ board }: KanbanViewProps) {
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex gap-4 overflow-x-auto pb-4 px-2">
+      <div className="flex gap-4 overflow-x-auto pb-4 px-2 custom-scrollbar">
         {labels.map((label: any) => (
           <KanbanColumn
             key={label.id}
             label={label}
             column={statusColumn}
+            boardId={board.id}
             items={itemsByStatus[label.id] || []}
             onItemMove={(itemId, columnId, position) => {
               updateColumnValueMutation.mutate({
@@ -587,36 +620,51 @@ export default function KanbanView({ board }: KanbanViewProps) {
             onEditName={handleEditName}
             onDelete={handleDelete}
             onDuplicate={handleDuplicate}
+            onItemClick={setSelectedItemId}
           />
         ))}
         {itemsByStatus['none'] && itemsByStatus['none'].length > 0 && (
           <KanbanColumn
             label={{ id: 'none', label: 'No Status', color: '#808080' }}
             column={statusColumn}
+            boardId={board.id}
             items={itemsByStatus['none']}
             onItemMove={() => {}}
             onAddItem={handleAddItem}
             onEditName={handleEditName}
             onDelete={handleDelete}
             onDuplicate={handleDuplicate}
+            onItemClick={setSelectedItemId}
           />
         )}
       </div>
 
       <DragOverlay>
         {activeItem && statusColumn ? (
-          <div className="rotate-3 scale-105">
+          <div className="rotate-2 scale-110 opacity-95 shadow-2xl">
             <KanbanItem 
               item={activeItem} 
-              column={statusColumn} 
+              column={statusColumn}
+              boardId={board.id}
               isDragging={true}
               onEditName={handleEditName}
               onDelete={handleDelete}
               onDuplicate={handleDuplicate}
+              commentCount={activeItem.comments?.length || 0}
             />
           </div>
         ) : null}
       </DragOverlay>
+
+      {/* Item Detail Modal */}
+      {selectedItemId && (
+        <ItemDetailModal
+          itemId={selectedItemId}
+          boardId={board.id}
+          isOpen={!!selectedItemId}
+          onClose={() => setSelectedItemId(null)}
+        />
+      )}
     </DndContext>
   )
 }
