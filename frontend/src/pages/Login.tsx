@@ -1,11 +1,14 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { loginSchema, type LoginInput } from '../utils/validation/auth'
+import { formatErrorMessage } from '../utils/errorMessages'
 
 export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(false)
   const [twoFactorRequired, setTwoFactorRequired] = useState(false)
   const [tempToken, setTempToken] = useState('')
@@ -18,18 +21,33 @@ export default function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+    setValidationErrors({})
+
+    // Validate with Zod
+    const result = loginSchema.safeParse({ email, password })
+    if (!result.success) {
+      const errors: Record<string, string> = {}
+      result.error.errors.forEach((err) => {
+        if (err.path[0]) {
+          errors[err.path[0].toString()] = err.message
+        }
+      })
+      setValidationErrors(errors)
+      return
+    }
+
     setLoading(true)
 
     try {
-      const result = await login(email, password)
-      if (result && result.twoFactorRequired) {
+      const loginResult = await login(email, password)
+      if (loginResult && loginResult.twoFactorRequired) {
         setTwoFactorRequired(true)
-        setTempToken(result.tempToken || '')
+        setTempToken(loginResult.tempToken || '')
       } else {
         navigate('/dashboard')
       }
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Login failed')
+      setError(formatErrorMessage(err))
     } finally {
       setLoading(false)
     }
@@ -100,6 +118,9 @@ export default function Login() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                     </svg>
                   </div>
+                  {validationErrors.email && (
+                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">{validationErrors.email}</p>
+                  )}
                 </div>
 
                 <div>
@@ -127,6 +148,9 @@ export default function Login() {
                     <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#9699a6] dark:text-[#9ca3af]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                     </svg>
+                    {validationErrors.password && (
+                      <p className="mt-1 text-sm text-red-600 dark:text-red-400">{validationErrors.password}</p>
+                    )}
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}

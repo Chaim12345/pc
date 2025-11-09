@@ -1,12 +1,15 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { registerSchema } from '../utils/validation/auth'
+import { formatErrorMessage } from '../utils/errorMessages'
 
 export default function Register() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(false)
   const { register } = useAuth()
   const navigate = useNavigate()
@@ -14,13 +17,28 @@ export default function Register() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+    setValidationErrors({})
+
+    // Validate with Zod
+    const result = registerSchema.safeParse({ name, email, password })
+    if (!result.success) {
+      const errors: Record<string, string> = {}
+      result.error.errors.forEach((err) => {
+        if (err.path[0]) {
+          errors[err.path[0].toString()] = err.message
+        }
+      })
+      setValidationErrors(errors)
+      return
+    }
+
     setLoading(true)
 
     try {
       await register(email, password, name)
       navigate('/dashboard')
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Registration failed')
+      setError(formatErrorMessage(err))
     } finally {
       setLoading(false)
     }
@@ -74,6 +92,9 @@ export default function Register() {
                 onChange={(e) => setName(e.target.value)}
                 style={{ fontSize: '16px' }}
               />
+              {validationErrors.name && (
+                <p className="mt-1 text-sm text-red-600">{validationErrors.name}</p>
+              )}
             </div>
 
             <div>
@@ -92,6 +113,9 @@ export default function Register() {
                 onChange={(e) => setEmail(e.target.value)}
                 style={{ fontSize: '16px' }}
               />
+              {validationErrors.email && (
+                <p className="mt-1 text-sm text-red-600">{validationErrors.email}</p>
+              )}
             </div>
 
             <div>
@@ -111,7 +135,11 @@ export default function Register() {
                 onChange={(e) => setPassword(e.target.value)}
                 style={{ fontSize: '16px' }}
               />
-              <p className="mt-2 text-xs text-gray-500">Must be at least 6 characters</p>
+              {validationErrors.password ? (
+                <p className="mt-1 text-sm text-red-600">{validationErrors.password}</p>
+              ) : (
+                <p className="mt-2 text-xs text-gray-500">Must be at least 8 characters</p>
+              )}
             </div>
 
             <button

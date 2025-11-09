@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { formatErrorMessage } from '../utils/errorMessages'
 
 const api = axios.create({
   baseURL: '/api',
@@ -21,7 +22,7 @@ api.interceptors.request.use(
   }
 )
 
-// Add response interceptor to handle auth errors
+// Add response interceptor to handle auth errors and format error messages
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -33,6 +34,12 @@ api.interceptors.response.use(
         window.location.href = '/login'
       }
     }
+    
+    // Format error message for better UX
+    if (error.response) {
+      error.formattedMessage = formatErrorMessage(error)
+    }
+    
     return Promise.reject(error)
   }
 )
