@@ -128,11 +128,9 @@ export default function WorkdocEditor() {
     setSaveTimeout(timeout)
 
     return () => {
-      if (saveTimeout) {
-        clearTimeout(saveTimeout)
-      }
+      clearTimeout(timeout)
     }
-  }, [title, content, hasUnsavedChanges])
+  }, [title, content, hasUnsavedChanges, workdoc, updateMutation])
 
   const handleTitleChange = (newTitle: string) => {
     setTitle(newTitle)
