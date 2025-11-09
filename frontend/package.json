@@ -18,6 +18,7 @@
     "@dnd-kit/utilities": "^3.2.1",
     "@monday-clone/shared": "*",
     "@tanstack/react-query": "^5.90.6",
+    "@tanstack/react-virtual": "^3.13.12",
     "@tiptap/extension-image": "^3.10.2",
     "@tiptap/extension-link": "^3.10.2",
     "@tiptap/extension-placeholder": "^3.10.2",
