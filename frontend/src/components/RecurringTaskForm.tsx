@@ -119,43 +119,50 @@ export default function RecurringTaskForm({ boardId, groupId, groups, editingTas
 
         {/* Task Name */}
         <div>
-          <label className="block text-sm font-medium text-monday-text dark:text-white mb-2">
-            Task Name *
+          <label htmlFor="task-name" className="block text-sm font-medium text-monday-text dark:text-white mb-2">
+            Task Name <span className="text-red-500" aria-label="required">*</span>
           </label>
           <input
+            id="task-name"
             type="text"
             value={formData.taskName}
             onChange={(e) => setFormData(prev => ({ ...prev, taskName: e.target.value }))}
             className="w-full px-3 py-2 border border-monday-border dark:border-gray-700 rounded-lg bg-white dark:bg-monday-dark text-monday-text dark:text-white focus:outline-none focus:ring-2 focus:ring-monday-primary"
             placeholder="Enter task name"
             required
+            aria-required="true"
           />
         </div>
 
         {/* Task Description */}
         <div>
-          <label className="block text-sm font-medium text-monday-text dark:text-white mb-2">
+          <label htmlFor="task-description" className="block text-sm font-medium text-monday-text dark:text-white mb-2">
             Description
           </label>
           <textarea
+            id="task-description"
             value={formData.taskDescription}
             onChange={(e) => setFormData(prev => ({ ...prev, taskDescription: e.target.value }))}
             className="w-full px-3 py-2 border border-monday-border dark:border-gray-700 rounded-lg bg-white dark:bg-monday-dark text-monday-text dark:text-white focus:outline-none focus:ring-2 focus:ring-monday-primary resize-none"
             rows={3}
             placeholder="Enter task description (optional)"
+            aria-describedby="task-description-hint"
           />
+          <span id="task-description-hint" className="sr-only">Optional task description</span>
         </div>
 
         {/* Group Selection */}
         <div>
-          <label className="block text-sm font-medium text-monday-text dark:text-white mb-2">
-            Target Group *
+          <label htmlFor="target-group" className="block text-sm font-medium text-monday-text dark:text-white mb-2">
+            Target Group <span className="text-red-500" aria-label="required">*</span>
           </label>
           <select
+            id="target-group"
             value={formData.groupId}
             onChange={(e) => setFormData(prev => ({ ...prev, groupId: e.target.value }))}
             className="w-full px-3 py-2 border border-monday-border dark:border-gray-700 rounded-lg bg-white dark:bg-monday-dark text-monday-text dark:text-white focus:outline-none focus:ring-2 focus:ring-monday-primary"
             required
+            aria-required="true"
           >
             <option value="">Select a group</option>
             {groups.map(group => (
@@ -167,14 +174,16 @@ export default function RecurringTaskForm({ boardId, groupId, groups, editingTas
         {/* Frequency */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-monday-text dark:text-white mb-2">
-              Frequency *
+            <label htmlFor="frequency" className="block text-sm font-medium text-monday-text dark:text-white mb-2">
+              Frequency <span className="text-red-500" aria-label="required">*</span>
             </label>
             <select
+              id="frequency"
               value={formData.frequency}
               onChange={(e) => setFormData(prev => ({ ...prev, frequency: e.target.value as any }))}
               className="w-full px-3 py-2 border border-monday-border dark:border-gray-700 rounded-lg bg-white dark:bg-monday-dark text-monday-text dark:text-white focus:outline-none focus:ring-2 focus:ring-monday-primary"
               required
+              aria-required="true"
             >
               <option value="daily">Daily</option>
               <option value="weekly">Weekly</option>
@@ -183,17 +192,19 @@ export default function RecurringTaskForm({ boardId, groupId, groups, editingTas
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-monday-text dark:text-white mb-2">
+            <label htmlFor="repeat-interval" className="block text-sm font-medium text-monday-text dark:text-white mb-2">
               Repeat Every
             </label>
             <div className="flex items-center space-x-2">
               <input
+                id="repeat-interval"
                 type="number"
                 min="1"
                 max="365"
                 value={formData.interval}
                 onChange={(e) => setFormData(prev => ({ ...prev, interval: parseInt(e.target.value) || 1 }))}
                 className="w-20 px-3 py-2 border border-monday-border dark:border-gray-700 rounded-lg bg-white dark:bg-monday-dark text-monday-text dark:text-white focus:outline-none focus:ring-2 focus:ring-monday-primary"
+                aria-label={`Repeat every ${formData.frequency === 'daily' ? 'days' : formData.frequency === 'weekly' ? 'weeks' : 'months'}`}
               />
               <span className="text-sm text-monday-textLight dark:text-gray-400">
                 {formData.frequency === 'daily' ? 'days' : formData.frequency === 'weekly' ? 'weeks' : 'months'}

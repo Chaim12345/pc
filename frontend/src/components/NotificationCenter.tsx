@@ -211,7 +211,8 @@ export default function NotificationCenter() {
               {notifications.length > 0 && (
                 <button
                   onClick={() => markAllAsReadMutation.mutate()}
-                  className="text-xs text-monday-primary hover:text-monday-primaryHover font-medium"
+                  className="text-xs text-monday-primary hover:text-monday-primaryHover font-medium focus:outline-none focus:ring-2 focus:ring-monday-primary focus:ring-offset-2 rounded px-2 py-1"
+                  aria-label="Mark all notifications as read"
                 >
                   Mark all as read
                 </button>
@@ -219,12 +220,15 @@ export default function NotificationCenter() {
             </div>
 
             {/* Filter Tabs */}
-            <div className="flex space-x-2 overflow-x-auto">
+            <div className="flex space-x-2 overflow-x-auto" role="tablist" aria-label="Notification filters">
               {filterTabs.map((tab) => (
                 <button
                   key={tab.key}
                   onClick={() => setFilter(tab.key as any)}
-                  className={`px-3 py-1 text-xs font-medium rounded-full whitespace-nowrap transition-colors ${
+                  role="tab"
+                  aria-selected={filter === tab.key}
+                  aria-controls={`notification-list-${tab.key}`}
+                  className={`px-3 py-1 text-xs font-medium rounded-full whitespace-nowrap transition-colors focus:outline-none focus:ring-2 focus:ring-monday-primary focus:ring-offset-2 ${
                     filter === tab.key
                       ? 'bg-monday-primary text-white'
                       : 'bg-gray-100 dark:bg-gray-800 text-monday-text dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
@@ -284,7 +288,8 @@ export default function NotificationCenter() {
                               e.stopPropagation()
                               deleteNotificationMutation.mutate(notification.id)
                             }}
-                            className="ml-2 p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
+                            className="ml-2 p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                            aria-label={`Delete notification: ${notification.title}`}
                           >
                             <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
