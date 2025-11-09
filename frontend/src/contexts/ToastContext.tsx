@@ -38,22 +38,25 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         {toasts.map((toast) => (
           <div
             key={toast.id}
-            className={`px-4 py-3 rounded-lg shadow-lg flex items-center space-x-3 min-w-[300px] max-w-md animate-in slide-in-from-bottom ${
+            className={`px-4 py-3 rounded-lg shadow-lg flex items-center space-x-3 min-w-[300px] max-w-md animate-in slide-in-from-bottom border-2 ${
               toast.type === 'success'
-                ? 'bg-green-50 border border-green-200 text-green-800'
+                ? 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-700 text-green-800 dark:text-green-200'
                 : toast.type === 'error'
-                ? 'bg-red-50 border border-red-200 text-red-800'
+                ? 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-700 text-red-800 dark:text-red-200'
                 : toast.type === 'warning'
-                ? 'bg-yellow-50 border border-yellow-200 text-yellow-800'
-                : 'bg-blue-50 border border-blue-200 text-blue-800'
+                ? 'bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-700 text-yellow-800 dark:text-yellow-200'
+                : 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-700 text-blue-800 dark:text-blue-200'
             }`}
           >
-            <div className="flex-1">{toast.message}</div>
+            <div className="flex-1 font-medium">{toast.message}</div>
             <button
               onClick={() => removeToast(toast.id)}
-              className="text-gray-400 hover:text-gray-600"
+              className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors flex-shrink-0"
+              aria-label="Close notification"
             >
-              ×
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
             </button>
           </div>
         ))}
