@@ -450,9 +450,62 @@ export default function KanbanView({ board }: KanbanViewProps) {
       const response = await api.post(`/columns/${columnId}/values`, { itemId, value })
       return response.data.data
     },
+    onMutate: async ({ itemId, columnId, value }) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['board', board.id] })
+
+      // Snapshot the previous value
+      const previousBoard = queryClient.getQueryData<Board>(['board', board.id])
+
+      // Optimistically update the board data
+      if (previousBoard) {
+        const updatedBoard = { ...previousBoard }
+        
+        // Find and update the item's column value
+        updatedBoard.groups?.forEach((group) => {
+          group.items?.forEach((item) => {
+            if (item.id === itemId) {
+              const columnValueIndex = item.columnValues?.findIndex((cv) => cv.columnId === columnId) ?? -1
+              
+              if (columnValueIndex >= 0 && item.columnValues) {
+                // Update existing column value
+                item.columnValues[columnValueIndex] = {
+                  ...item.columnValues[columnValueIndex],
+                  value,
+                }
+              } else if (item.columnValues) {
+                // Add new column value
+                item.columnValues.push({
+                  columnId,
+                  value,
+                } as any)
+              } else {
+                // Initialize columnValues array
+                item.columnValues = [{
+                  columnId,
+                  value,
+                } as any]
+              }
+            }
+          })
+        })
+
+        // Update the cache optimistically
+        queryClient.setQueryData<Board>(['board', board.id], updatedBoard)
+      }
+
+      return { previousBoard }
+    },
+    onError: (err, variables, context) => {
+      // Rollback on error
+      if (context?.previousBoard) {
+        queryClient.setQueryData(['board', board.id], context.previousBoard)
+      }
+      showToast('Failed to move item', 'error')
+    },
     onSuccess: () => {
+      // Refetch to ensure consistency, but don't show toast (already moved optimistically)
       queryClient.invalidateQueries({ queryKey: ['board', board.id] })
-      showToast('Item moved successfully', 'success')
       if (socket) {
         socket.emit(SocketEvent.COLUMN_UPDATED, { boardId: board.id })
       }
@@ -490,15 +543,25 @@ export default function KanbanView({ board }: KanbanViewProps) {
   }
 
   const handleDragEnd = (event: DragEndEvent) => {
-    setActiveItem(null)
     const { active, over } = event
 
-    if (!over || !statusColumn) return
+    if (!over || !statusColumn) {
+      setActiveItem(null)
+      return
+    }
 
     const itemId = active.id as string
     const overId = over.id as string
     const settings = statusColumn.settings as any
     const labels = settings?.labels || []
+
+    // Find current item status
+    const currentItem = board.groups
+      ?.flatMap((g) => g.items || [])
+      .find((item) => item.id === itemId)
+    
+    const currentColumnValue = currentItem?.columnValues?.find((cv) => cv.columnId === statusColumn.id)
+    const currentStatus = currentColumnValue?.value as { id: string } | null
 
     let targetStatus: any = null
 
@@ -520,17 +583,27 @@ export default function KanbanView({ board }: KanbanViewProps) {
       targetStatus = labels[0] || { id: '1', label: 'Working on it', color: '#FDAB3D' }
     }
 
-    if (targetStatus) {
+    // Only update if status actually changed
+    const targetStatusId = targetStatus.id?.toString() ?? targetStatus.id
+    const currentStatusId = currentStatus?.id?.toString()
+    
+    if (targetStatusId !== currentStatusId) {
+      // Update optimistically - the mutation will handle the UI update
       updateColumnValueMutation.mutate({
         itemId,
         columnId: statusColumn.id,
         value: {
-          id: targetStatus.id?.toString() ?? targetStatus.id,
+          id: targetStatusId,
           label: targetStatus.label,
           color: targetStatus.color,
         },
       })
     }
+
+    // Clear active item after a short delay to allow smooth transition
+    setTimeout(() => {
+      setActiveItem(null)
+    }, 100)
   }
 
   // Group items by status
