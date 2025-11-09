@@ -26,8 +26,14 @@ export const boardController = {
             include: {
               items: {
                 include: {
-                  columnValues: true
-                }
+                  columnValues: {
+                    include: {
+                      column: true
+                    }
+                  }
+                },
+                orderBy: { position: 'asc' },
+                take: 100 // Limit items per group to prevent loading too much data
               }
             },
             orderBy: { position: 'asc' }
