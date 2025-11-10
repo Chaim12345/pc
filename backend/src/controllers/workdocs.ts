@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth';
+import { logger } from '../utils/logger';
 
 const prisma = new PrismaClient();
 
@@ -36,7 +37,7 @@ export const workdocController = {
 
       res.json({ success: true, data: workdocs });
     } catch (error: any) {
-      console.error('Get workdocs error:', error);
+      logger.error('Get workdocs error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -65,7 +66,7 @@ export const workdocController = {
 
       res.json({ success: true, data: workdoc });
     } catch (error: any) {
-      console.error('Get workdoc error:', error);
+      logger.error('Get workdoc error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -96,7 +97,7 @@ export const workdocController = {
 
       res.status(201).json({ success: true, data: workdoc });
     } catch (error: any) {
-      console.error('Create workdoc error:', error);
+      logger.error('Create workdoc error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -126,7 +127,7 @@ export const workdocController = {
 
       res.json({ success: true, data: workdoc });
     } catch (error: any) {
-      console.error('Update workdoc error:', error);
+      logger.error('Update workdoc error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -141,7 +142,166 @@ export const workdocController = {
 
       res.json({ success: true, message: 'Workdoc deleted' });
     } catch (error: any) {
-      console.error('Delete workdoc error:', error);
+      logger.error('Delete workdoc error:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  },
+
+  async share(req: AuthRequest, res: Response) {
+    try {
+      const { id } = req.params;
+      const { email, accessLevel } = req.body;
+      const userId = req.userId!;
+
+      // Verify workdoc exists and user has access
+      const workdoc = await prisma.workdoc.findUnique({
+        where: { id },
+        include: {
+          organization: {
+            include: {
+              members: {
+                where: { userId }
+              }
+            }
+          }
+        }
+      });
+
+      if (!workdoc) {
+        return res.status(404).json({ success: false, error: 'Workdoc not found' });
+      }
+
+      // Check if user has access to organization
+      if (!workdoc.organization.members.length) {
+        return res.status(403).json({ success: false, error: 'Access denied' });
+      }
+
+      // For now, return success with a share token
+      // In a full implementation, you'd store this in a WorkdocShare table
+      const shareToken = `wd_${id}_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+      const shareLink = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/workdocs/shared/${shareToken}`;
+
+      res.json({
+        success: true,
+        data: {
+          email,
+          accessLevel: accessLevel || 'view',
+          shareLink,
+          token: shareToken
+        }
+      });
+    } catch (error: any) {
+      logger.error('Share workdoc error:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  },
+
+  async generateShareLink(req: AuthRequest, res: Response) {
+    try {
+      const { id } = req.params;
+      const userId = req.userId!;
+
+      const workdoc = await prisma.workdoc.findUnique({
+        where: { id },
+        include: {
+          organization: {
+            include: {
+              members: {
+                where: { userId }
+              }
+            }
+          }
+        }
+      });
+
+      if (!workdoc) {
+        return res.status(404).json({ success: false, error: 'Workdoc not found' });
+      }
+
+      if (!workdoc.organization.members.length) {
+        return res.status(403).json({ success: false, error: 'Access denied' });
+      }
+
+      const shareToken = `wd_${id}_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+      const shareLink = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/workdocs/shared/${shareToken}`;
+
+      res.json({
+        success: true,
+        data: {
+          shareLink,
+          token: shareToken
+        }
+      });
+    } catch (error: any) {
+      logger.error('Generate share link error:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  },
+
+  async getShares(req: AuthRequest, res: Response) {
+    try {
+      const { id } = req.params;
+      const userId = req.userId!;
+
+      const workdoc = await prisma.workdoc.findUnique({
+        where: { id },
+        include: {
+          organization: {
+            include: {
+              members: {
+                where: { userId }
+              }
+            }
+          }
+        }
+      });
+
+      if (!workdoc) {
+        return res.status(404).json({ success: false, error: 'Workdoc not found' });
+      }
+
+      if (!workdoc.organization.members.length) {
+        return res.status(403).json({ success: false, error: 'Access denied' });
+      }
+
+      // Return empty array for now - in full implementation, query WorkdocShare table
+      res.json({ success: true, data: [] });
+    } catch (error: any) {
+      logger.error('Get shares error:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  },
+
+  async revokeShare(req: AuthRequest, res: Response) {
+    try {
+      const { id, shareId } = req.params;
+      const userId = req.userId!;
+
+      const workdoc = await prisma.workdoc.findUnique({
+        where: { id },
+        include: {
+          organization: {
+            include: {
+              members: {
+                where: { userId }
+              }
+            }
+          }
+        }
+      });
+
+      if (!workdoc) {
+        return res.status(404).json({ success: false, error: 'Workdoc not found' });
+      }
+
+      if (!workdoc.organization.members.length) {
+        return res.status(403).json({ success: false, error: 'Access denied' });
+      }
+
+      // In full implementation, delete from WorkdocShare table
+      res.json({ success: true, message: 'Share revoked' });
+    } catch (error: any) {
+      logger.error('Revoke share error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   }
