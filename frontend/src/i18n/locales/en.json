@@ -37,7 +37,21 @@
     "invalidCredentials": "Invalid email or password",
     "emailRequired": "Email is required",
     "passwordRequired": "Password is required",
-    "nameRequired": "Name is required"
+    "nameRequired": "Name is required",
+    "welcomeBack": "Welcome back",
+    "loginDescription": "Log in to your account to continue",
+    "workEmail": "Work email",
+    "keepLoggedIn": "Keep me logged in",
+    "loggingIn": "Logging in...",
+    "twoFactorAuth": "Two-Factor Authentication",
+    "enterVerificationCode": "Enter the verification code from your authenticator app",
+    "verificationCode": "Verification Code",
+    "verifying": "Verifying...",
+    "verifyContinue": "Verify & Continue",
+    "backToLogin": "Back to login",
+    "orContinueWith": "Or continue with",
+    "noAccount": "Don't have an account?",
+    "signUpFree": "Sign up for free"
   },
   "boards": {
     "title": "Boards",
