@@ -1,0 +1,86 @@
+{
+  "common": {
+    "save": "שמור",
+    "cancel": "בטל",
+    "delete": "מחק",
+    "edit": "ערוך",
+    "create": "צור",
+    "update": "עדכן",
+    "search": "חפש",
+    "filter": "סנן",
+    "sort": "מיין",
+    "close": "סגור",
+    "back": "חזור",
+    "next": "הבא",
+    "previous": "הקודם",
+    "loading": "טוען...",
+    "error": "שגיאה",
+    "success": "הצלחה",
+    "warning": "אזהרה",
+    "info": "מידע",
+    "confirm": "אישור",
+    "yes": "כן",
+    "no": "לא"
+  },
+  "auth": {
+    "login": "התחבר",
+    "logout": "התנתק",
+    "register": "הירשם",
+    "email": "אימייל",
+    "password": "סיסמה",
+    "name": "שם",
+    "forgotPassword": "שכחת סיסמה?",
+    "rememberMe": "זכור אותי",
+    "loginSuccess": "התחברות הצליחה",
+    "logoutSuccess": "התנתקות הצליחה",
+    "registerSuccess": "הרשמה הצליחה",
+    "invalidCredentials": "אימייל או סיסמה לא תקינים",
+    "emailRequired": "אימייל נדרש",
+    "passwordRequired": "סיסמה נדרשת",
+    "nameRequired": "שם נדרש"
+  },
+  "boards": {
+    "title": "לוחות",
+    "createBoard": "צור לוח",
+    "boardName": "שם הלוח",
+    "boardDescription": "תיאור",
+    "noBoards": "לא נמצאו לוחות",
+    "deleteBoard": "מחק לוח",
+    "deleteBoardConfirm": "האם אתה בטוח שברצונך למחוק את הלוח הזה?",
+    "boardDeleted": "הלוח נמחק בהצלחה"
+  },
+  "items": {
+    "title": "פריטים",
+    "createItem": "צור פריט",
+    "itemName": "שם הפריט",
+    "noItems": "לא נמצאו פריטים",
+    "deleteItem": "מחק פריט",
+    "deleteItemConfirm": "האם אתה בטוח שברצונך למחוק את הפריט הזה?",
+    "itemDeleted": "הפריט נמחק בהצלחה"
+  },
+  "comments": {
+    "title": "תגובות",
+    "addComment": "הוסף תגובה",
+    "noComments": "אין תגובות עדיין",
+    "deleteComment": "מחק תגובה",
+    "deleteCommentConfirm": "האם אתה בטוח שברצונך למחוק את התגובה הזו?",
+    "commentDeleted": "התגובה נמחקה בהצלחה"
+  },
+  "notifications": {
+    "title": "התראות",
+    "noNotifications": "אין התראות",
+    "markAllRead": "סמן הכל כנקרא",
+    "newNotification": "התראה חדשה"
+  },
+  "settings": {
+    "title": "הגדרות",
+    "profile": "פרופיל",
+    "account": "חשבון",
+    "preferences": "העדפות",
+    "language": "שפה",
+    "theme": "ערכת נושא",
+    "darkMode": "מצב כהה",
+    "lightMode": "מצב בהיר"
+  }
+}
+

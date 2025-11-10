@@ -1,0 +1,86 @@
+{
+  "common": {
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "delete": "Löschen",
+    "edit": "Bearbeiten",
+    "create": "Erstellen",
+    "update": "Aktualisieren",
+    "search": "Suchen",
+    "filter": "Filtern",
+    "sort": "Sortieren",
+    "close": "Schließen",
+    "back": "Zurück",
+    "next": "Weiter",
+    "previous": "Zurück",
+    "loading": "Lädt...",
+    "error": "Fehler",
+    "success": "Erfolg",
+    "warning": "Warnung",
+    "info": "Information",
+    "confirm": "Bestätigen",
+    "yes": "Ja",
+    "no": "Nein"
+  },
+  "auth": {
+    "login": "Anmelden",
+    "logout": "Abmelden",
+    "register": "Registrieren",
+    "email": "E-Mail",
+    "password": "Passwort",
+    "name": "Name",
+    "forgotPassword": "Passwort vergessen?",
+    "rememberMe": "Angemeldet bleiben",
+    "loginSuccess": "Anmeldung erfolgreich",
+    "logoutSuccess": "Abmeldung erfolgreich",
+    "registerSuccess": "Registrierung erfolgreich",
+    "invalidCredentials": "Ungültige E-Mail oder Passwort",
+    "emailRequired": "E-Mail ist erforderlich",
+    "passwordRequired": "Passwort ist erforderlich",
+    "nameRequired": "Name ist erforderlich"
+  },
+  "boards": {
+    "title": "Boards",
+    "createBoard": "Board erstellen",
+    "boardName": "Board-Name",
+    "boardDescription": "Beschreibung",
+    "noBoards": "Keine Boards gefunden",
+    "deleteBoard": "Board löschen",
+    "deleteBoardConfirm": "Sind Sie sicher, dass Sie dieses Board löschen möchten?",
+    "boardDeleted": "Board erfolgreich gelöscht"
+  },
+  "items": {
+    "title": "Elemente",
+    "createItem": "Element erstellen",
+    "itemName": "Elementname",
+    "noItems": "Keine Elemente gefunden",
+    "deleteItem": "Element löschen",
+    "deleteItemConfirm": "Sind Sie sicher, dass Sie dieses Element löschen möchten?",
+    "itemDeleted": "Element erfolgreich gelöscht"
+  },
+  "comments": {
+    "title": "Kommentare",
+    "addComment": "Kommentar hinzufügen",
+    "noComments": "Noch keine Kommentare",
+    "deleteComment": "Kommentar löschen",
+    "deleteCommentConfirm": "Sind Sie sicher, dass Sie diesen Kommentar löschen möchten?",
+    "commentDeleted": "Kommentar erfolgreich gelöscht"
+  },
+  "notifications": {
+    "title": "Benachrichtigungen",
+    "noNotifications": "Keine Benachrichtigungen",
+    "markAllRead": "Alle als gelesen markieren",
+    "newNotification": "Neue Benachrichtigung"
+  },
+  "settings": {
+    "title": "Einstellungen",
+    "profile": "Profil",
+    "account": "Konto",
+    "preferences": "Einstellungen",
+    "language": "Sprache",
+    "theme": "Design",
+    "darkMode": "Dunkler Modus",
+    "lightMode": "Heller Modus"
+  }
+}
+

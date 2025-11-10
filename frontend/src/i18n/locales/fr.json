@@ -1,0 +1,86 @@
+{
+  "common": {
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "create": "Créer",
+    "update": "Mettre à jour",
+    "search": "Rechercher",
+    "filter": "Filtrer",
+    "sort": "Trier",
+    "close": "Fermer",
+    "back": "Retour",
+    "next": "Suivant",
+    "previous": "Précédent",
+    "loading": "Chargement...",
+    "error": "Erreur",
+    "success": "Succès",
+    "warning": "Avertissement",
+    "info": "Information",
+    "confirm": "Confirmer",
+    "yes": "Oui",
+    "no": "Non"
+  },
+  "auth": {
+    "login": "Se connecter",
+    "logout": "Se déconnecter",
+    "register": "S'inscrire",
+    "email": "E-mail",
+    "password": "Mot de passe",
+    "name": "Nom",
+    "forgotPassword": "Mot de passe oublié?",
+    "rememberMe": "Se souvenir de moi",
+    "loginSuccess": "Connexion réussie",
+    "logoutSuccess": "Déconnexion réussie",
+    "registerSuccess": "Inscription réussie",
+    "invalidCredentials": "E-mail ou mot de passe invalide",
+    "emailRequired": "L'e-mail est requis",
+    "passwordRequired": "Le mot de passe est requis",
+    "nameRequired": "Le nom est requis"
+  },
+  "boards": {
+    "title": "Tableaux",
+    "createBoard": "Créer un tableau",
+    "boardName": "Nom du tableau",
+    "boardDescription": "Description",
+    "noBoards": "Aucun tableau trouvé",
+    "deleteBoard": "Supprimer le tableau",
+    "deleteBoardConfirm": "Êtes-vous sûr de vouloir supprimer ce tableau?",
+    "boardDeleted": "Tableau supprimé avec succès"
+  },
+  "items": {
+    "title": "Éléments",
+    "createItem": "Créer un élément",
+    "itemName": "Nom de l'élément",
+    "noItems": "Aucun élément trouvé",
+    "deleteItem": "Supprimer l'élément",
+    "deleteItemConfirm": "Êtes-vous sûr de vouloir supprimer cet élément?",
+    "itemDeleted": "Élément supprimé avec succès"
+  },
+  "comments": {
+    "title": "Commentaires",
+    "addComment": "Ajouter un commentaire",
+    "noComments": "Pas encore de commentaires",
+    "deleteComment": "Supprimer le commentaire",
+    "deleteCommentConfirm": "Êtes-vous sûr de vouloir supprimer ce commentaire?",
+    "commentDeleted": "Commentaire supprimé avec succès"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "noNotifications": "Aucune notification",
+    "markAllRead": "Tout marquer comme lu",
+    "newNotification": "Nouvelle notification"
+  },
+  "settings": {
+    "title": "Paramètres",
+    "profile": "Profil",
+    "account": "Compte",
+    "preferences": "Préférences",
+    "language": "Langue",
+    "theme": "Thème",
+    "darkMode": "Mode sombre",
+    "lightMode": "Mode clair"
+  }
+}
+
