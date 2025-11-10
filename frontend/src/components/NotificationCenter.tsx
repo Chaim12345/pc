@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef, useMemo } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useNavigate } from 'react-router-dom'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { api } from '../services/api'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useSocket } from '../contexts/SocketContext'
 import { useToast } from '../contexts/ToastContext'
+import { api } from '../services/api'
+import { logger } from '../utils/logger'
 
 interface Notification {
   id: string
@@ -111,19 +112,38 @@ export default function NotificationCenter() {
   // Listen for real-time notifications
   useEffect(() => {
     if (socket) {
-      socket.on('NOTIFICATION_NEW', () => {
+      const handleNotificationNew = (data: { notification?: Notification }) => {
+        logger.log('Received NOTIFICATION_NEW event:', data)
+        
+        // If notification data is provided, add it to the list immediately
+        if (data.notification) {
+          setAllNotifications(prev => [data.notification!, ...prev])
+          // Show toast for mentions
+          if (data.notification.type === 'mention') {
+            showToast(data.notification.message, 'info')
+          }
+        }
+        
+        // Invalidate queries to refresh data
         queryClient.invalidateQueries({ queryKey: ['notifications'] })
         queryClient.invalidateQueries({ queryKey: ['notifications', 'unread-count'] })
+        
         // Reset to first page when new notification arrives
         setPage(1)
-        setAllNotifications([])
-      })
+        if (!data.notification) {
+          setAllNotifications([])
+        }
+      }
+
+      socket.on('NOTIFICATION_NEW', handleNotificationNew)
+      logger.log('Listening for NOTIFICATION_NEW events')
 
       return () => {
-        socket.off('NOTIFICATION_NEW')
+        socket.off('NOTIFICATION_NEW', handleNotificationNew)
+        logger.log('Stopped listening for NOTIFICATION_NEW events')
       }
     }
-  }, [socket, queryClient])
+  }, [socket, queryClient, showToast])
 
   // Close dropdown when clicking outside
   useEffect(() => {
