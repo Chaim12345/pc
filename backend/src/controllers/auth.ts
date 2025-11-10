@@ -3,6 +3,9 @@ import bcrypt from 'bcryptjs';
 import jwt, { SignOptions, Secret } from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
 import { authenticator } from 'otplib';
+import { validatePasswordStrength } from '../utils/passwordValidation';
+import { recordLoginAttempt, isAccountLocked, getRemainingAttempts, clearLoginAttempts } from '../utils/accountLockout';
+import { logger } from '../utils/logger';
 
 const prisma = new PrismaClient();
 
@@ -27,6 +30,16 @@ export const authController = {
         return res.status(400).json({
           success: false,
           error: 'User already exists'
+        });
+      }
+
+      // Validate password strength
+      const passwordValidation = validatePasswordStrength(password);
+      if (!passwordValidation.valid) {
+        return res.status(400).json({
+          success: false,
+          error: 'Password does not meet requirements',
+          details: passwordValidation.errors
         });
       }
 
@@ -83,7 +96,7 @@ export const authController = {
         }
       });
     } catch (error: any) {
-      console.error('Register error:', error);
+      logger.error('Register error:', error);
       res.status(500).json({
         success: false,
         error: error.message || 'Internal server error'
@@ -101,16 +114,39 @@ export const authController = {
         });
       }
 
+      // Check if account is locked
+      const lockoutStatus = isAccountLocked(email);
+      if (lockoutStatus.locked) {
+        const minutesRemaining = Math.ceil(
+          (lockoutStatus.unlockTime!.getTime() - Date.now()) / (60 * 1000)
+        );
+        return res.status(429).json({
+          success: false,
+          error: `Account locked due to too many failed login attempts. Please try again in ${minutesRemaining} minute(s).`
+        });
+      }
+
       const user = await prisma.user.findUnique({
         where: { email }
       });
 
-      if (!user || !(await bcrypt.compare(password, user.password))) {
+      const isPasswordValid = user && await bcrypt.compare(password, user.password);
+
+      if (!user || !isPasswordValid) {
+        // Record failed attempt
+        await recordLoginAttempt(email, false);
+        const remainingAttempts = getRemainingAttempts(email);
+        
         return res.status(401).json({
           success: false,
-          error: 'Invalid credentials'
+          error: 'Invalid credentials',
+          remainingAttempts: remainingAttempts > 0 ? remainingAttempts : 0
         });
       }
+
+      // Record successful attempt and clear failed attempts
+      await recordLoginAttempt(email, true);
+      clearLoginAttempts(email);
       
       if (user.isTwoFactorEnabled) {
         // User has 2FA enabled, so we need to prompt for a token
@@ -158,7 +194,7 @@ export const authController = {
         }
       });
     } catch (error: any) {
-      console.error('Login error:', error);
+      logger.error('Login error:', error);
       res.status(500).json({
         success: false,
         error: error.message || 'Internal server error'
@@ -221,7 +257,7 @@ export const authController = {
       });
 
     } catch (error) {
-      console.error('2FA verification error:', error);
+      logger.error('2FA verification error:', error);
       res.status(500).json({ success: false, error: 'Failed to verify 2FA token.' });
     }
   },
@@ -263,7 +299,7 @@ export const authController = {
         data: user
       });
     } catch (error: any) {
-      console.error('Get current user error:', error);
+      logger.error('Get current user error:', error);
       res.status(500).json({
         success: false,
         error: error.message || 'Internal server error'
