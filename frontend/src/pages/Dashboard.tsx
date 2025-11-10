@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../services/api'
 import { Board } from '@monday-clone/shared'
@@ -18,14 +19,15 @@ const BOARD_COLORS = [
 ]
 
 export default function Dashboard() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { setPageTitle, setPageActions } = usePage()
 
   useEffect(() => {
-    setPageTitle('My Work')
+    setPageTitle(t('dashboard.myWork', 'My Work'))
     // Actions are now in MainLayout, we can clear them or set them if needed for this page
     setPageActions(null)
-  }, [setPageTitle, setPageActions])
+  }, [setPageTitle, setPageActions, t])
 
   // Enable keyboard shortcuts
   useKeyboardShortcuts()
@@ -83,13 +85,13 @@ export default function Dashboard() {
                       <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                       </svg>
-                      {board.groups?.length || 0} groups
+                      {board.groups?.length || 0} {t('dashboard.groups', 'groups')}
                     </span>
                     <span className="flex items-center">
                       <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                       </svg>
-                      Team
+                      {t('dashboard.team', 'Team')}
                     </span>
                   </div>
                 </div>
@@ -106,10 +108,10 @@ export default function Dashboard() {
             </svg>
           </div>
           <h3 className="text-2xl font-bold text-monday-text dark:text-white mb-3">
-            No boards yet
+            {t('dashboard.noBoards', 'No boards yet')}
           </h3>
           <p className="text-monday-textLight dark:text-gray-400 mb-8 max-w-md mx-auto">
-            Get started by creating your first board to organize your work and collaborate with your team
+            {t('dashboard.noBoardsDescription', 'Get started by creating your first board to organize your work and collaborate with your team')}
           </p>
           {/* The "Create your first board" button is handled by the MainLayout now */}
         </div>

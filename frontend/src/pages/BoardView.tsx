@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../contexts/AuthContext'
 import { useSocket } from '../contexts/SocketContext'
@@ -20,6 +21,7 @@ import { usePage } from '../contexts/PageContext'
 
 
 export default function BoardView() {
+  const { t } = useTranslation()
   const { boardId } = useParams<{ boardId: string }>()
   const navigate = useNavigate()
   const { setPageTitle, setPageActions } = usePage()
@@ -63,12 +65,12 @@ export default function BoardView() {
            <button
               onClick={() => setShowGuestAccess(true)}
               className="px-4 py-2 text-sm font-medium text-white bg-monday-primary hover:bg-monday-primaryHover rounded-lg transition-all hover:scale-105 hover:shadow-lg hidden md:flex items-center space-x-2"
-              title="Share board with guests"
+              title={t('boards.shareBoard', 'Share board with guests')}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
               </svg>
-              <span className="hidden xl:inline">Share</span>
+              <span className="hidden xl:inline">{t('boards.share', 'Share')}</span>
             </button>
         </div>
       )
@@ -90,13 +92,13 @@ export default function BoardView() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['board', boardId] })
-      showToast('Column added successfully', 'success')
+      showToast(t('boards.columnAdded', 'Column added successfully'), 'success')
       setShowAddColumn(false)
       setNewColumnTitle('')
       setNewColumnType('TEXT')
     },
     onError: () => {
-      showToast('Failed to add column', 'error')
+      showToast(t('boards.columnAddFailed', 'Failed to add column'), 'error')
     },
   })
 

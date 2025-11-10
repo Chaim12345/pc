@@ -69,7 +69,18 @@
     "noBoards": "No boards found",
     "deleteBoard": "Delete Board",
     "deleteBoardConfirm": "Are you sure you want to delete this board?",
-    "boardDeleted": "Board deleted successfully"
+    "boardDeleted": "Board deleted successfully",
+    "share": "Share",
+    "shareBoard": "Share board with guests",
+    "columnAdded": "Column added successfully",
+    "columnAddFailed": "Failed to add column"
+  },
+  "dashboard": {
+    "myWork": "My Work",
+    "groups": "groups",
+    "team": "Team",
+    "noBoards": "No boards yet",
+    "noBoardsDescription": "Get started by creating your first board to organize your work and collaborate with your team"
   },
   "items": {
     "title": "Items",
