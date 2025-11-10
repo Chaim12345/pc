@@ -51,7 +51,15 @@
     "backToLogin": "Back to login",
     "orContinueWith": "Or continue with",
     "noAccount": "Don't have an account?",
-    "signUpFree": "Sign up for free"
+    "signUpFree": "Sign up for free",
+    "getStarted": "Get started for free",
+    "createAccountDescription": "Create your account and start managing projects",
+    "fullName": "Full name",
+    "creatingAccount": "Creating account...",
+    "createAccount": "Create account",
+    "orSignUpWith": "Or sign up with",
+    "alreadyHaveAccount": "Already have an account?",
+    "signIn": "Sign in"
   },
   "boards": {
     "title": "Boards",

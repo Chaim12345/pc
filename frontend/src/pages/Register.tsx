@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../contexts/AuthContext'
 import { registerSchema } from '../utils/validation/auth'
 import { formatErrorMessage } from '../utils/errorMessages'
 
 export default function Register() {
+  const { t } = useTranslation()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -65,8 +67,8 @@ export default function Register() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
             </svg>
           </div>
-          <h1 className="text-3xl font-bold text-monday-text mb-2">Get started for free</h1>
-          <p className="text-monday-textLight">Create your account and start managing projects</p>
+          <h1 className="text-3xl font-bold text-monday-text mb-2">{t('auth.getStarted', 'Get started for free')}</h1>
+          <p className="text-monday-textLight">{t('auth.createAccountDescription', 'Create your account and start managing projects')}</p>
         </div>
 
         {/* Register Form */}
@@ -83,7 +85,7 @@ export default function Register() {
 
             <div>
               <label htmlFor="name" className="block text-sm font-semibold text-monday-text mb-2">
-                Full name
+                {t('auth.fullName', 'Full name')}
               </label>
               <input
                 id="name"
@@ -104,7 +106,7 @@ export default function Register() {
 
             <div>
               <label htmlFor="email" className="block text-sm font-semibold text-monday-text mb-2">
-                Work email
+                {t('auth.workEmail', 'Work email')}
               </label>
               <input
                 id="email"
@@ -125,7 +127,7 @@ export default function Register() {
 
             <div>
               <label htmlFor="password" className="block text-sm font-semibold text-monday-text mb-2">
-                Password
+                {t('auth.password', 'Password')}
               </label>
               <input
                 id="password"
@@ -165,14 +167,14 @@ export default function Register() {
               className="w-full py-3.5 px-4 bg-monday-primary hover:bg-monday-primaryHover text-white font-semibold rounded-lg shadow-monday hover:shadow-monday-hover transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
             >
               {loading ? (
-                <span className="flex items-center justify-center">
+                  <span className="flex items-center justify-center">
                   <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  Creating account...
+                  {t('auth.creatingAccount', 'Creating account...')}
                 </span>
-              ) : 'Create account'}
+              ) : t('auth.createAccount', 'Create account')}
             </button>
           </form>
 
@@ -181,7 +183,7 @@ export default function Register() {
               <div className="w-full border-t border-gray-200"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-white text-gray-500">Or sign up with</span>
+              <span className="px-4 bg-white text-gray-500">{t('auth.orSignUpWith', 'Or sign up with')}</span>
             </div>
           </div>
 
@@ -204,9 +206,9 @@ export default function Register() {
           </div>
 
           <div className="text-center pt-4">
-            <span className="text-sm text-gray-600">Already have an account? </span>
+            <span className="text-sm text-gray-600">{t('auth.alreadyHaveAccount', 'Already have an account?')} </span>
             <Link to="/login" className="text-sm font-semibold text-monday-primary hover:text-monday-primaryHover transition-colors">
-              Sign in
+              {t('auth.signIn', 'Sign in')}
             </Link>
           </div>
         </div>
