@@ -182,6 +182,7 @@ FRONTEND_URL=https://app.mondayclone.com
 REDIS_URL=redis://redis-host:6379
 API_URL=https://api.mondayclone.com
 OPENAI_API_KEY=sk-...
+SENTRY_DSN=https://xxx@xxx.ingest.sentry.io/xxx
 ```
 
 ## Security Notes
