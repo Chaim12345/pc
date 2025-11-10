@@ -520,12 +520,13 @@ export const usersController = {
         },
       });
 
-      // TODO: Send invitation email with temporary password
-      // For now, we'll just return success
-      // In production, you would send an email with:
-      // - Welcome message
-      // - Temporary password
-      // - Link to set up account
+      // Future enhancement: Send invitation email with temporary password
+      // This would require:
+      // - Email service integration (e.g., SendGrid, AWS SES, Nodemailer)
+      // - Email template system
+      // - Welcome message with temporary password
+      // - Link to set up account and change password
+      // For now, the user is created and can log in with the provided password
 
       res.status(201).json({
         success: true,

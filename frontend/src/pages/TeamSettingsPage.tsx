@@ -7,7 +7,7 @@ import AddMemberModal from '../components/AddMemberModal'
 import AddBoardModal from '../components/AddBoardModal'
 import EditTeamModal from '../components/EditTeamModal'
 
-// TODO: Replace with actual types from a types file
+// Note: These types are defined locally. Consider creating a shared types file (e.g., frontend/src/types/index.ts) for better type reusability across components.
 type User = {
   id: string
   name: string
