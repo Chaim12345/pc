@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { loginSchema, type LoginInput } from '../utils/validation/auth'
 import { formatErrorMessage } from '../utils/errorMessages'
+import { loginSchema } from '../utils/validation/auth'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -27,7 +27,7 @@ export default function Login() {
     const result = loginSchema.safeParse({ email, password })
     if (!result.success) {
       const errors: Record<string, string> = {}
-      result.error.errors.forEach((err) => {
+      result.error.issues.forEach((err) => {
         if (err.path[0]) {
           errors[err.path[0].toString()] = err.message
         }
@@ -47,7 +47,15 @@ export default function Login() {
         navigate('/dashboard')
       }
     } catch (err: any) {
-      setError(formatErrorMessage(err))
+      // Handle account lockout error
+      if (err.response?.status === 429) {
+        setError(err.response?.data?.error || 'Account locked due to too many failed login attempts')
+      } else if (err.response?.data?.remainingAttempts !== undefined) {
+        const remaining = err.response.data.remainingAttempts
+        setError(`${formatErrorMessage(err)}${remaining > 0 ? ` (${remaining} attempt${remaining > 1 ? 's' : ''} remaining)` : ''}`)
+      } else {
+        setError(formatErrorMessage(err))
+      }
     } finally {
       setLoading(false)
     }

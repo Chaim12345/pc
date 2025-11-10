@@ -38,7 +38,12 @@ export default function Register() {
       await register(email, password, name)
       navigate('/dashboard')
     } catch (err: any) {
-      setError(formatErrorMessage(err))
+      // Handle password validation errors
+      if (err.response?.data?.details && Array.isArray(err.response.data.details)) {
+        setValidationErrors({ password: err.response.data.details.join(', ') })
+      } else {
+        setError(formatErrorMessage(err))
+      }
     } finally {
       setLoading(false)
     }
@@ -136,9 +141,21 @@ export default function Register() {
                 style={{ fontSize: '16px' }}
               />
               {validationErrors.password ? (
-                <p className="mt-1 text-sm text-red-600">{validationErrors.password}</p>
+                <div className="mt-1">
+                  <p className="text-sm text-red-600 mb-2">{validationErrors.password}</p>
+                  <div className="text-xs text-gray-500 space-y-1">
+                    <p>Password must contain:</p>
+                    <ul className="list-disc list-inside space-y-0.5 ml-2">
+                      <li>At least 8 characters</li>
+                      <li>One uppercase letter</li>
+                      <li>One lowercase letter</li>
+                      <li>One number</li>
+                      <li>One special character</li>
+                    </ul>
+                  </div>
+                </div>
               ) : (
-                <p className="mt-2 text-xs text-gray-500">Must be at least 8 characters</p>
+                <p className="mt-2 text-xs text-gray-500">Must be at least 8 characters with uppercase, lowercase, number, and special character</p>
               )}
             </div>
 
