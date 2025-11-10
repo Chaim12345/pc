@@ -9,6 +9,7 @@ import cron from 'node-cron';
 import axios from 'axios';
 import { setupSocket } from './socket';
 import { setupRoutes } from './routes';
+import { setupSwagger } from './config/swagger';
 import { apiLimiter, sanitizeInput } from './middleware/security';
 import { errorHandler, errorLogger, notFoundHandler } from './middleware/errorHandler';
 import { cacheService } from './services/cacheService';
@@ -27,9 +28,23 @@ const io = new Server(httpServer, {
 const PORT = process.env.PORT || 3001;
 
 // Security middleware
+const isProduction = process.env.NODE_ENV === 'production';
 app.use(helmet({
-  contentSecurityPolicy: false, // Disable for development; configure properly for production
+  contentSecurityPolicy: isProduction ? {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'", process.env.FRONTEND_URL || 'http://localhost:5173'],
+      frameSrc: ["'none'"],
+      objectSrc: ["'none'"],
+      upgradeInsecureRequests: isProduction ? [] : null,
+    },
+  } : false,
   crossOriginEmbedderPolicy: false,
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
 }));
 
 // CORS middleware
@@ -53,6 +68,11 @@ app.use('/api', apiLimiter);
 
 // Setup Socket.io
 setupSocket(io);
+
+// Setup Swagger documentation (only in development)
+if (process.env.NODE_ENV !== 'production') {
+  setupSwagger(app);
+}
 
 // Setup routes
 setupRoutes(app);
