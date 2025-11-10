@@ -124,7 +124,8 @@ export default function RecurringTasksModal({ boardId, groupId, isOpen, onClose 
 
   const getNextRuns = (task: RecurringTask, count: number = 5) => {
     const dates = []
-    let currentDate = new Date(task.nextRunDate)
+    const startDate = new Date(task.nextRunDate)
+    let currentDate = new Date(startDate)
     
     for (let i = 0; i < count; i++) {
       dates.push(new Date(currentDate))
