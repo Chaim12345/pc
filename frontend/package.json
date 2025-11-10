@@ -19,6 +19,7 @@
     "@dnd-kit/sortable": "^7.0.0",
     "@dnd-kit/utilities": "^3.2.1",
     "@monday-clone/shared": "*",
+    "@sentry/react": "^10.23.0",
     "@tanstack/react-query": "^5.90.6",
     "@tanstack/react-virtual": "^3.13.12",
     "@tiptap/extension-image": "^3.10.2",

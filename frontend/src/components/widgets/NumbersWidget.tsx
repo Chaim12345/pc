@@ -17,7 +17,7 @@ export default function NumbersWidget({ widget, boards }: NumbersWidgetProps) {
     const board = boards.find(b => b.id === boardId)
     if (!board || !board.groups) return 0
 
-    let values: number[] = []
+    const values: number[] = []
     board.groups.forEach(group => {
       group.items?.forEach(item => {
         if (columnId) {
