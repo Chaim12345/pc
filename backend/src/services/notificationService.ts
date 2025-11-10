@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { Server as SocketIOServer } from 'socket.io';
+import { logger } from '../utils/logger';
 
 const prisma = new PrismaClient();
 
@@ -50,12 +51,17 @@ export class NotificationService {
 
       // Emit socket event to the user
       if (this.io) {
-        this.io.to(`user:${userId}`).emit('NOTIFICATION_NEW', { notification });
+        const room = `user:${userId}`;
+        logger.log(`Emitting notification to socket room: ${room}`);
+        this.io.to(room).emit('NOTIFICATION_NEW', { notification });
+        logger.log(`Notification emitted successfully to room ${room}`);
+      } else {
+        logger.warn('Socket.IO instance not available, notification not emitted via socket');
       }
 
       return notification;
     } catch (error) {
-      console.error('Create notification error:', error);
+      logger.error('Create notification error:', error);
       throw error;
     }
   }

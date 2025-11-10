@@ -2,6 +2,7 @@ import { Server, Socket } from 'socket.io';
 import jwt from 'jsonwebtoken';
 import { SocketEvent } from '@monday-clone/shared';
 import { notificationService } from '../services/notificationService';
+import { logger } from '../utils/logger';
 
 interface AuthenticatedSocket extends Socket {
   userId?: string;
@@ -28,9 +29,13 @@ export function setupSocket(io: Server) {
   });
 
   io.on('connection', (socket: AuthenticatedSocket) => {
+    logger.log(`Socket connected: ${socket.id}, userId: ${socket.userId}`);
+    
     // Join user's personal notification room
     if (socket.userId) {
-      socket.join(`user:${socket.userId}`);
+      const room = `user:${socket.userId}`;
+      socket.join(room);
+      logger.log(`User ${socket.userId} joined notification room: ${room}`);
     }
 
     socket.on(SocketEvent.JOIN_BOARD, (boardId: string) => {
@@ -91,6 +96,7 @@ export function setupSocket(io: Server) {
     });
 
     socket.on('disconnect', () => {
+      logger.log(`Socket disconnected: ${socket.id}, userId: ${socket.userId}`);
       if (socket.boardId) {
         io.to(`board:${socket.boardId}`).emit(SocketEvent.USER_LEFT, {
           userId: socket.userId,

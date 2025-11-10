@@ -4,6 +4,7 @@ import { AuthRequest } from '../middleware/auth';
 import { notificationService } from '../services/notificationService';
 import { parseMentions, findUsersFromMentions } from '../utils/mentionParser';
 import { cacheService } from '../services/cacheService';
+import { logger } from '../utils/logger';
 
 const prisma = new PrismaClient();
 
@@ -55,7 +56,7 @@ export const commentController = {
 
       res.json({ success: true, data: comments });
     } catch (error: any) {
-      console.error('Get comments error:', error);
+      logger.error('Get comments error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -124,10 +125,12 @@ export const commentController = {
 
       // Send notifications for mentions
       if (mentionUserIds.length > 0) {
+        logger.log(`Sending mention notifications to ${mentionUserIds.length} user(s)`);
         for (const mentionedUserId of mentionUserIds) {
           // Don't notify the commenter themselves
           if (mentionedUserId !== userId) {
             try {
+              logger.log(`Sending mention notification to user ${mentionedUserId}`);
               await notificationService.notifyMention(
                 mentionedUserId,
                 commenter.name,
@@ -135,11 +138,16 @@ export const commentController = {
                 item.name,
                 item.boardId
               );
+              logger.log(`Mention notification sent successfully to user ${mentionedUserId}`);
             } catch (error) {
-              console.error('Failed to send mention notification:', error);
+              logger.error('Failed to send mention notification:', error);
             }
+          } else {
+            logger.log(`Skipping mention notification for commenter ${userId}`);
           }
         }
+      } else {
+        logger.log('No mentions found in comment');
       }
 
       // Send notification to item assignees (if any)
@@ -193,7 +201,7 @@ export const commentController = {
                 item.boardId
               );
             } catch (error) {
-              console.error('Failed to send comment notification:', error);
+              logger.error('Failed to send comment notification:', error);
             }
           }
         }
@@ -204,7 +212,7 @@ export const commentController = {
       // Invalidate cache
       await cacheService.invalidateItem(itemId);
     } catch (error: any) {
-      console.error('Create comment error:', error);
+      logger.error('Create comment error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -266,7 +274,7 @@ export const commentController = {
 
       res.json({ success: true, message: 'Comment deleted' });
     } catch (error: any) {
-      console.error('Delete comment error:', error);
+      logger.error('Delete comment error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   }
