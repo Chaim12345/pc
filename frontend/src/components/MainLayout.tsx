@@ -11,6 +11,7 @@ import GlobalSearch from './GlobalSearch'
 import KeyboardShortcutsPanel from './KeyboardShortcutsPanel'
 import NotificationCenter from './NotificationCenter'
 import SidebarSkeleton from './SidebarSkeleton'
+import LanguageSwitcher from './LanguageSwitcher'
 
 export default function MainLayout() {
   const { user, logout } = useAuth()
