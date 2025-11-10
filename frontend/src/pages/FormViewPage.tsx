@@ -275,15 +275,30 @@ export default function FormViewPage() {
               id={fieldId}
               type="checkbox"
               checked={formData[field.id] || false}
-              onChange={(e) => handleFieldChange(field.id, e.target.checked)}
+              onChange={(e) => {
+                handleFieldChange(field.id, e.target.checked)
+                if (validationErrors[field.id]) {
+                  setValidationErrors(prev => {
+                    const newErrors = { ...prev }
+                    delete newErrors[field.id]
+                    return newErrors
+                  })
+                }
+              }}
               required={field.required}
               aria-required={field.required}
-              className="w-5 h-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              aria-invalid={!!validationErrors[field.id]}
+              className="w-5 h-5 text-[var(--vibe-primary)] focus:ring-[var(--vibe-primary)] border-[var(--vibe-border-light)] rounded bg-[var(--vibe-bg-primary)]"
             />
-            <label htmlFor={fieldId} className="text-gray-700 dark:text-gray-300 cursor-pointer">
+            <label htmlFor={fieldId} className="text-[var(--vibe-primary-text)] cursor-pointer">
               {field.label}
               {field.required && <span className="text-red-500 ml-1" aria-label="required">*</span>}
             </label>
+            {validationErrors[field.id] && (
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400" role="alert">
+                {validationErrors[field.id]}
+              </p>
+            )}
           </div>
         )
       
@@ -297,11 +312,26 @@ export default function FormViewPage() {
             <input
               id={fieldId}
               type="file"
-              onChange={(e) => handleFieldChange(field.id, e.target.files?.[0])}
+              onChange={(e) => {
+                handleFieldChange(field.id, e.target.files?.[0])
+                if (validationErrors[field.id]) {
+                  setValidationErrors(prev => {
+                    const newErrors = { ...prev }
+                    delete newErrors[field.id]
+                    return newErrors
+                  })
+                }
+              }}
               required={field.required}
               className={commonClasses}
               aria-required={field.required}
+              aria-invalid={!!validationErrors[field.id]}
             />
+            {validationErrors[field.id] && (
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400" role="alert">
+                {validationErrors[field.id]}
+              </p>
+            )}
           </div>
         )
       
