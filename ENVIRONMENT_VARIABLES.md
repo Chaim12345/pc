@@ -68,6 +68,13 @@ This document describes all environment variables used in the Monday Clone appli
 - **Example**: `sk-...`
 - **Note**: Required only if using AI features
 
+#### `SENTRY_DSN`
+- **Description**: Sentry Data Source Name for error tracking and monitoring
+- **Type**: String (URL)
+- **Example**: `https://xxx@xxx.ingest.sentry.io/xxx`
+- **Note**: Required only if using Sentry error tracking. Get from Sentry project settings.
+- **Status**: Optional - Error reporting will fall back to console logs if not provided
+
 #### `UPLOAD_MAX_SIZE`
 - **Description**: Maximum file upload size in bytes
 - **Type**: Number
@@ -125,6 +132,13 @@ None - Frontend uses proxy configuration in `vite.config.ts`
 - **Type**: String (URL)
 - **Default**: Uses proxy to `http://localhost:3001`
 - **Example**: `https://api.mondayclone.com`
+
+#### `VITE_SENTRY_DSN`
+- **Description**: Sentry Data Source Name for frontend error tracking and monitoring
+- **Type**: String (URL)
+- **Example**: `https://xxx@xxx.ingest.sentry.io/xxx`
+- **Note**: Required only if using Sentry error tracking. Get from Sentry project settings.
+- **Status**: Optional - Error reporting will fall back to console logs if not provided
 
 ## Docker Environment Variables
 

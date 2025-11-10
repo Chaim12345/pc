@@ -1,4 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
+import { errorReportingService } from '../utils/errorReporting';
+import { logger } from '../utils/logger';
 
 // Custom error class
 export class AppError extends Error {
@@ -16,13 +18,23 @@ export class AppError extends Error {
 
 // Error logger
 export const errorLogger = (error: Error, req: Request, res: Response, next: NextFunction) => {
-  console.error('Error occurred:');
-  console.error('Path:', req.path);
-  console.error('Method:', req.method);
-  console.error('Error:', error.message);
-  console.error('Stack:', error.stack);
+  logger.error('Error occurred:', {
+    path: req.path,
+    method: req.method,
+    error: error.message,
+    stack: error.stack,
+  });
   
-  // In production, you would send this to a logging service like Sentry, LogRocket, etc.
+  // Report to Sentry (only for non-operational errors or 5xx errors)
+  if (!(error instanceof AppError) || error.statusCode >= 500) {
+    errorReportingService.reportError(error, {
+      endpoint: req.path,
+      method: req.method,
+      userId: (req as any).userId,
+      body: req.body,
+      query: req.query,
+    });
+  }
   
   next(error);
 };

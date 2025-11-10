@@ -8,6 +8,10 @@ import { ThemeProvider } from './contexts/ThemeContext'
 import { PageProvider } from './contexts/PageContext'
 import ErrorBoundary from './components/ErrorBoundary'
 import SkipLinks from './components/SkipLinks'
+import { errorReportingService } from './utils/errorReporting'
+
+// Initialize error reporting
+errorReportingService.init()
 
 const queryClient = new QueryClient({
   defaultOptions: {

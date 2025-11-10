@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { errorReportingService } from '../utils/errorReporting';
 
 export interface AuthRequest extends Request {
   userId?: string;
@@ -20,6 +21,9 @@ export const authenticate = async (
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as { userId: string };
     req.userId = decoded.userId;
+    
+    // Set user context in Sentry for error tracking
+    errorReportingService.setUser(decoded.userId);
     
     next();
   } catch (error) {

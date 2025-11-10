@@ -13,8 +13,12 @@ import { setupSwagger } from './config/swagger';
 import { apiLimiter, sanitizeInput } from './middleware/security';
 import { errorHandler, errorLogger, notFoundHandler } from './middleware/errorHandler';
 import { cacheService } from './services/cacheService';
+import { errorReportingService } from './utils/errorReporting';
 
 dotenv.config();
+
+// Initialize error reporting (must be done before any other imports that might throw)
+errorReportingService.init();
 
 const app = express();
 const httpServer = createServer(app);

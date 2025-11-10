@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { User } from '@monday-clone/shared'
 import { api } from '../services/api'
+import { errorReportingService } from '../utils/errorReporting'
 
 interface AuthContextType {
   user: User | null
@@ -33,10 +34,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchCurrentUser = async () => {
     try {
       const response = await api.get('/auth/me')
-      setUser(response.data.data)
+      const userData = response.data.data
+      setUser(userData)
+      // Set user context in Sentry
+      errorReportingService.setUser(userData.id, {
+        email: userData.email,
+        name: userData.name,
+      })
     } catch (error) {
       localStorage.removeItem('token')
       setToken(null)
+      errorReportingService.clearUser()
     } finally {
       setLoading(false)
     }
@@ -56,6 +64,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(user)
     setToken(token)
     localStorage.setItem('token', token)
+    // Set user context in Sentry
+    errorReportingService.setUser(user.id, {
+      email: user.email,
+      name: user.name,
+    })
   }
 
   const verifyTwoFactor = async (tempToken: string, token: string) => {
@@ -64,6 +77,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(user)
     setToken(fullToken)
     localStorage.setItem('token', fullToken)
+    // Set user context in Sentry
+    errorReportingService.setUser(user.id, {
+      email: user.email,
+      name: user.name,
+    })
   }
 
   const register = async (email: string, password: string, name: string) => {
@@ -72,6 +90,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(user)
     setToken(token)
     localStorage.setItem('token', token)
+    // Set user context in Sentry
+    errorReportingService.setUser(user.id, {
+      email: user.email,
+      name: user.name,
+    })
     // No need to set header here - the interceptor handles it
   }
 
@@ -79,6 +102,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null)
     setToken(null)
     localStorage.removeItem('token')
+    // Clear user context in Sentry
+    errorReportingService.clearUser()
     // No need to delete header here - the interceptor handles it
   }
 

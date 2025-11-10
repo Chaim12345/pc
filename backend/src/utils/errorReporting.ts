@@ -1,15 +1,17 @@
 /**
- * Error reporting utility with Sentry integration
+ * Error reporting utility with Sentry integration for backend
  */
 
-import * as Sentry from '@sentry/react'
+import * as Sentry from '@sentry/node'
+import { ProfilingIntegration } from '@sentry/profiling-node'
 import { logger } from './logger'
 
 interface ErrorContext {
   userId?: string
   boardId?: string
   itemId?: string
-  component?: string
+  endpoint?: string
+  method?: string
   [key: string]: any
 }
 
@@ -22,8 +24,8 @@ class ErrorReportingService {
   init() {
     if (this.initialized) return
 
-    const dsn = import.meta.env.VITE_SENTRY_DSN
-    const environment = import.meta.env.MODE || 'development'
+    const dsn = process.env.SENTRY_DSN
+    const environment = process.env.NODE_ENV || 'development'
 
     if (!dsn) {
       logger.warn('Sentry DSN not configured. Error reporting will be limited to console logs.')
@@ -35,28 +37,32 @@ class ErrorReportingService {
       dsn,
       environment,
       integrations: [
-        Sentry.browserTracingIntegration(),
-        Sentry.replayIntegration({
-          maskAllText: true,
-          blockAllMedia: true,
-        }),
+        // Enable profiling
+        new ProfilingIntegration(),
       ],
       // Performance Monitoring
       tracesSampleRate: environment === 'production' ? 0.1 : 1.0,
-      // Session Replay
-      replaysSessionSampleRate: environment === 'production' ? 0.1 : 1.0,
-      replaysOnErrorSampleRate: 1.0,
+      // Profiling
+      profilesSampleRate: environment === 'production' ? 0.1 : 1.0,
       // Filter out common non-critical errors
       beforeSend(event, hint) {
-        // Filter out network errors that are likely user-related (offline, etc.)
+        // Filter out common non-critical errors
         if (event.exception) {
           const error = hint.originalException
           if (error instanceof Error) {
-            // Filter out common browser errors
+            // Filter out validation errors (handled by API)
             if (
-              error.message.includes('ResizeObserver loop') ||
-              error.message.includes('Non-Error promise rejection') ||
-              error.message.includes('ChunkLoadError')
+              error.message.includes('validation') ||
+              error.message.includes('ValidationError') ||
+              error.name === 'ZodError'
+            ) {
+              return null
+            }
+            // Filter out authentication errors (expected)
+            if (
+              error.message.includes('Unauthorized') ||
+              error.message.includes('Forbidden') ||
+              error.message.includes('Token')
             ) {
               return null
             }
@@ -74,7 +80,7 @@ class ErrorReportingService {
    * Report an error to Sentry
    */
   reportError(error: Error, context?: ErrorContext) {
-    // Log to console in development
+    // Log to console
     logger.error('Error reported:', error, context)
 
     if (!this.initialized) {
@@ -85,7 +91,8 @@ class ErrorReportingService {
     Sentry.captureException(error, {
       extra: context,
       tags: {
-        component: context?.component || 'unknown',
+        endpoint: context?.endpoint || 'unknown',
+        method: context?.method || 'unknown',
       },
     })
   }
@@ -141,6 +148,20 @@ class ErrorReportingService {
 
     Sentry.setContext(name, context)
   }
+
+  /**
+   * Capture message (non-error)
+   */
+  captureMessage(message: string, level: Sentry.SeverityLevel = 'info', context?: ErrorContext) {
+    if (!this.initialized) {
+      this.init()
+    }
+
+    Sentry.captureMessage(message, level, {
+      extra: context,
+    })
+  }
 }
 
 export const errorReportingService = new ErrorReportingService()
+
