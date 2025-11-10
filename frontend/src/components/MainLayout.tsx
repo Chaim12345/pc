@@ -421,13 +421,15 @@ export default function MainLayout() {
 
             <NotificationCenter />
 
+            <LanguageSwitcher />
+
             <button
               onClick={toggleTheme}
               className="p-2.5 rounded-lg text-monday-textLight dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all hover:scale-110"
               aria-label="Toggle dark mode"
               title="Toggle dark mode"
             >
-              {theme === 'dark' ? '??' : '??'}
+              {theme === 'dark' ? '🌙' : '☀️'}
             </button>
 
             <div className="relative">
