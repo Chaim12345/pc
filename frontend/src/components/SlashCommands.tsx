@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
 import { Editor } from '@tiptap/react'
+import React, { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
 import tippy, { Instance as TippyInstance } from 'tippy.js'
 import 'tippy.js/dist/tippy.css'
 

@@ -1,15 +1,16 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useRef, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
-import CollaborativePresence from '../components/CollaborativePresence'
-import ConfirmationDialog from '../components/ConfirmationDialog'
-import ShareWorkdocModal from '../components/ShareWorkdocModal'
+import React, { useState, useEffect, useRef } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useToast } from '../contexts/ToastContext'
+import { api } from '../services/api'
 import TipTapEditor from '../components/TipTapEditor'
 import VibeButton from '../components/VibeButton'
 import { useSocket } from '../contexts/SocketContext'
 import { useTheme } from '../contexts/ThemeContext'
-import { useToast } from '../contexts/ToastContext'
-import { api } from '../services/api'
+import CollaborativePresence from '../components/CollaborativePresence'
+import ShareWorkdocModal from '../components/ShareWorkdocModal'
+import ConfirmationDialog from '../components/ConfirmationDialog'
+import SkipLinks from '../components/SkipLinks' // ✅ FIX: Added skip links import
 
 interface Workdoc {
   id: string
@@ -38,7 +39,6 @@ export default function WorkdocEditor() {
   const [content, setContent] = useState('')
   const [isEditingTitle, setIsEditingTitle] = useState(false)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
-  const [saveTimeout, setSaveTimeout] = useState<NodeJS.Timeout | null>(null)
   const [showCoverImage, setShowCoverImage] = useState(false)
   const [coverImageUrl, setCoverImageUrl] = useState('')
   const [emoji, setEmoji] = useState('📄')
@@ -48,6 +48,7 @@ export default function WorkdocEditor() {
   const [showMoreMenu, setShowMoreMenu] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const titleInputRef = useRef<HTMLInputElement>(null)
+  const titleTextareaRef = useRef<HTMLTextAreaElement>(null) // ✅ FIX: Added ref for auto-resize
   const moreMenuRef = useRef<HTMLDivElement>(null)
 
   const { data: workdoc, isLoading } = useQuery<Workdoc>({
@@ -67,10 +68,19 @@ export default function WorkdocEditor() {
     }
   }, [workdoc])
 
+  // ✅ FIX: Auto-resize title textarea
+  useEffect(() => {
+    const textarea = titleTextareaRef.current
+    if (textarea) {
+      textarea.style.height = 'auto'
+      textarea.style.height = textarea.scrollHeight + 'px'
+    }
+  }, [title])
+
   // Socket connection for collaborative features
   useEffect(() => {
-    // Check if socket exists and has emit method
-    if (!socket || typeof socket.emit !== 'function' || !workdocId) return
+    // ✅ FIX: Check socket.connected instead of just socket
+    if (!socket?.connected || typeof socket.emit !== 'function' || !workdocId) return
 
     // Join workdoc room
     socket.emit('join-workdoc', { workdocId })
@@ -92,14 +102,14 @@ export default function WorkdocEditor() {
     })
 
     return () => {
-      if (socket && typeof socket.emit === 'function') {
+      if (socket?.connected && typeof socket.emit === 'function') {
         socket.emit('leave-workdoc', { workdocId })
         socket.off('collaborator-joined')
         socket.off('collaborator-left')
         socket.off('workdoc-updated')
       }
     }
-  }, [socket, workdocId, queryClient])
+  }, [socket?.connected, workdocId, queryClient]) // ✅ FIX: Changed dependency to socket.connected
 
   const updateMutation = useMutation({
     mutationFn: async (data: { title?: string; content?: string }) => {
@@ -117,27 +127,19 @@ export default function WorkdocEditor() {
     },
   })
 
-  // Auto-save functionality
+  // ✅ FIX: Auto-save functionality - removed problematic dependencies
   useEffect(() => {
     if (!hasUnsavedChanges || !workdoc) return
 
-    // Clear existing timeout
-    if (saveTimeout) {
-      clearTimeout(saveTimeout)
-    }
-
-    // Set new timeout for auto-save
+    // Set timeout for auto-save
     const timeout = setTimeout(() => {
       updateMutation.mutate({ title, content })
     }, 2000) // Auto-save after 2 seconds of no changes
 
-    setSaveTimeout(timeout)
-
     return () => {
       clearTimeout(timeout)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [title, content, hasUnsavedChanges, workdoc])
+  }, [title, content, hasUnsavedChanges]) // ✅ Removed updateMutation and workdoc from dependencies
 
   const handleTitleChange = (newTitle: string) => {
     setTitle(newTitle)
@@ -150,9 +152,6 @@ export default function WorkdocEditor() {
   }
 
   const handleManualSave = () => {
-    if (saveTimeout) {
-      clearTimeout(saveTimeout)
-    }
     updateMutation.mutate({ title, content })
   }
 
@@ -206,20 +205,22 @@ export default function WorkdocEditor() {
     )
   }
 
-    if (!workdoc) {
-      return (
-        <div className="flex flex-col items-center justify-center h-screen bg-[var(--vibe-bg-primary)] text-[var(--vibe-secondary-text)]">
-          <svg className="w-16 h-16 text-[var(--vibe-icon-color)] mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-          <p className="mb-4 text-center">Workdoc not found</p>
-          <VibeButton onClick={() => navigate('/workdocs')}>Back to Workdocs</VibeButton>
-        </div>
-      )
-    }
+  if (!workdoc) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen bg-[var(--vibe-bg-primary)] text-[var(--vibe-secondary-text)]">
+        <svg className="w-16 h-16 text-[var(--vibe-icon-color)] mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        <p className="mb-4 text-center">Workdoc not found</p>
+        <VibeButton onClick={() => navigate('/workdocs')}>Back to Workdocs</VibeButton>
+      </div>
+    )
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-[var(--vibe-bg-primary)]">
+      <SkipLinks /> {/* ✅ FIX: Added skip links component */}
+      
       {/* Minimal Top Bar - Notion/Monday Style */}
       <div className="sticky top-0 z-10 border-b border-[var(--vibe-border-light)] bg-[var(--vibe-bg-primary)]/95 backdrop-blur-sm">
         <div className="max-w-5xl mx-auto px-8 py-3 flex items-center justify-between">
@@ -228,6 +229,7 @@ export default function WorkdocEditor() {
               onClick={() => navigate('/workdocs')}
               className="p-1.5 hover:bg-[var(--vibe-bg-hover)] rounded-md transition-colors"
               title="Back to Workdocs"
+              aria-label="Back to Workdocs" // ✅ FIX: Added aria-label
             >
               <svg className="w-5 h-5 text-[var(--vibe-icon-color)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -235,13 +237,15 @@ export default function WorkdocEditor() {
             </button>
             
             {/* Status Indicator - Compact */}
-            {hasUnsavedChanges ? (
-              <span className="text-xs text-[var(--vibe-secondary-text)]">Unsaved</span>
-            ) : updateMutation.isPending ? (
-              <span className="text-xs text-[var(--vibe-secondary-text)]">Saving...</span>
-            ) : (
-              <span className="text-xs text-[var(--vibe-positive)]">Saved</span>
-            )}
+            <div role="status" aria-live="polite" aria-atomic="true"> {/* ✅ FIX: Added ARIA live region */}
+              {hasUnsavedChanges ? (
+                <span className="text-xs text-[var(--vibe-secondary-text)]">Unsaved</span>
+              ) : updateMutation.isPending ? (
+                <span className="text-xs text-[var(--vibe-secondary-text)]">Saving...</span>
+              ) : (
+                <span className="text-xs text-[var(--vibe-positive)]">Saved</span>
+              )}
+            </div>
           </div>
 
           <div className="flex items-center space-x-2">
@@ -250,6 +254,7 @@ export default function WorkdocEditor() {
               onClick={() => setShowShareModal(true)}
               className="flex items-center space-x-1.5 px-3 py-1.5 text-sm font-medium text-[var(--vibe-primary-text)] hover:bg-[var(--vibe-bg-hover)] rounded-lg transition-colors"
               title="Share"
+              aria-label="Share workdoc" // ✅ FIX: Added aria-label
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
@@ -261,7 +266,7 @@ export default function WorkdocEditor() {
             <button
               onClick={toggleTheme}
               className="p-1.5 hover:bg-[var(--vibe-bg-hover)] rounded-md transition-colors"
-              aria-label="Toggle dark mode"
+              aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'} // ✅ FIX: Better aria-label
               title="Toggle dark mode"
             >
               {theme === 'dark' ? (
@@ -282,13 +287,15 @@ export default function WorkdocEditor() {
                 className="p-1.5 hover:bg-[var(--vibe-bg-hover)] rounded-md transition-colors"
                 title="More options"
                 aria-label="More options"
+                aria-expanded={showMoreMenu} // ✅ FIX: Added aria-expanded
+                aria-haspopup="true" // ✅ FIX: Added aria-haspopup
               >
                 <svg className="w-5 h-5 text-[var(--vibe-icon-color)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
                 </svg>
               </button>
               {showMoreMenu && (
-                <div className="absolute right-0 top-full mt-2 w-48 bg-[var(--vibe-bg-primary)] border border-[var(--vibe-border-light)] rounded-lg shadow-lg z-50">
+                <div className="absolute right-0 top-full mt-2 w-48 bg-[var(--vibe-bg-primary)] border border-[var(--vibe-border-light)] rounded-lg shadow-lg z-50" role="menu">
                   <button
                     onClick={() => {
                       navigator.clipboard.writeText(window.location.href)
@@ -296,6 +303,7 @@ export default function WorkdocEditor() {
                       setShowMoreMenu(false)
                     }}
                     className="w-full px-4 py-2 text-left text-sm text-[var(--vibe-primary-text)] hover:bg-[var(--vibe-bg-hover)] transition-colors flex items-center gap-2"
+                    role="menuitem"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -304,7 +312,6 @@ export default function WorkdocEditor() {
                   </button>
                   <button
                     onClick={() => {
-                      // Export functionality - could be enhanced
                       const blob = new Blob([`# ${title}\n\n${content}`], { type: 'text/markdown' })
                       const url = URL.createObjectURL(blob)
                       const a = document.createElement('a')
@@ -316,6 +323,7 @@ export default function WorkdocEditor() {
                       setShowMoreMenu(false)
                     }}
                     className="w-full px-4 py-2 text-left text-sm text-[var(--vibe-primary-text)] hover:bg-[var(--vibe-bg-hover)] transition-colors flex items-center gap-2"
+                    role="menuitem"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -329,6 +337,7 @@ export default function WorkdocEditor() {
                       setShowMoreMenu(false)
                     }}
                     className="w-full px-4 py-2 text-left text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-2"
+                    role="menuitem"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -344,7 +353,7 @@ export default function WorkdocEditor() {
               {collaborators.length > 0 && (
                 <CollaborativePresence collaborators={collaborators} />
               )}
-              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[var(--vibe-primary)] to-[var(--vibe-primary-selected)] flex items-center justify-center text-white text-xs font-semibold">
+              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[var(--vibe-primary)] to-[var(--vibe-primary-selected)] flex items-center justify-center text-white text-xs font-semibold" aria-label={`${workdoc.creator.name}, document owner`}>
                 {workdoc.creator.name.charAt(0).toUpperCase()}
               </div>
             </div>
@@ -352,14 +361,14 @@ export default function WorkdocEditor() {
         </div>
       </div>
 
-      {/* Editor Content - Notion Style */}
-      <div className="flex-1 overflow-y-auto">
+      {/* ✅ FIX: Editor Content - Added main landmark with ID */}
+      <main id="main-content" role="main" className="flex-1 overflow-y-auto">
         <div className="max-w-3xl mx-auto px-8 py-12">
           {/* Cover Image Placeholder (Notion-style) */}
           <div className="group relative mb-8">
             <div className="h-40 bg-gradient-to-br from-[var(--vibe-primary-light)] to-[var(--vibe-primary)] rounded-xl overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity">
               <div className="absolute inset-0 flex items-center justify-center">
-                <button className="px-4 py-2 bg-white/90 hover:bg-white text-[var(--vibe-primary-text)] rounded-lg text-sm font-medium shadow-lg transition-all">
+                <button className="px-4 py-2 bg-white/90 hover:bg-white text-[var(--vibe-primary-text)] rounded-lg text-sm font-medium shadow-lg transition-all" aria-label="Add cover image">
                   Add cover
                 </button>
               </div>
@@ -374,11 +383,13 @@ export default function WorkdocEditor() {
                 onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                 className="text-6xl mb-4 hover:bg-[var(--vibe-bg-hover)] rounded-lg p-2 -ml-2 transition-colors"
                 title="Change icon"
+                aria-label="Change document icon" // ✅ FIX: Added aria-label
+                aria-expanded={showEmojiPicker} // ✅ FIX: Added aria-expanded
               >
                 {emoji}
               </button>
               {showEmojiPicker && (
-                <div className="absolute top-0 left-0 bg-[var(--vibe-bg-primary)] border border-[var(--vibe-border-light)] rounded-lg shadow-lg p-3 z-50 grid grid-cols-5 gap-2 max-w-xs">
+                <div className="absolute top-0 left-0 bg-[var(--vibe-bg-primary)] border border-[var(--vibe-border-light)] rounded-lg shadow-lg p-3 z-50 grid grid-cols-5 gap-2 max-w-xs" role="dialog" aria-label="Emoji picker">
                   {commonEmojis.map((e) => (
                     <button
                       key={e}
@@ -387,6 +398,7 @@ export default function WorkdocEditor() {
                         setShowEmojiPicker(false)
                       }}
                       className="text-2xl hover:bg-[var(--vibe-bg-hover)] rounded p-1 transition-colors"
+                      aria-label={`Select ${e} emoji`}
                     >
                       {e}
                     </button>
@@ -402,6 +414,7 @@ export default function WorkdocEditor() {
                         setShowEmojiPicker(false)
                       }
                     }}
+                    aria-label="Type custom emoji"
                     autoFocus
                   />
                 </div>
@@ -411,6 +424,7 @@ export default function WorkdocEditor() {
             {/* Title - Large and Bold */}
             {isEditingTitle ? (
               <textarea
+                ref={titleTextareaRef} // ✅ FIX: Added ref
                 value={title}
                 onChange={(e) => handleTitleChange(e.target.value)}
                 onBlur={() => setIsEditingTitle(false)}
@@ -425,14 +439,23 @@ export default function WorkdocEditor() {
                   }
                 }}
                 className="w-full text-5xl font-bold text-[var(--vibe-primary-text)] bg-transparent focus:outline-none resize-none overflow-hidden"
-                style={{ height: 'auto' }}
                 autoFocus
                 rows={1}
+                aria-label="Document title"
               />
             ) : (
               <h1
                 className="text-5xl font-bold text-[var(--vibe-primary-text)] cursor-text hover:bg-[var(--vibe-bg-hover)]/50 rounded-lg px-2 py-1 -mx-2 transition-colors leading-tight"
                 onClick={() => setIsEditingTitle(true)}
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    setIsEditingTitle(true)
+                  }
+                }}
+                role="button"
+                aria-label="Click to edit title"
               >
                 {title || 'Untitled'}
               </h1>
@@ -442,14 +465,14 @@ export default function WorkdocEditor() {
           {/* Metadata - Small and subtle */}
           <div className="flex items-center space-x-3 text-xs text-[var(--vibe-secondary-text)] mb-8 pl-2">
             <div className="flex items-center space-x-1.5">
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
               <span>{workdoc.creator.name}</span>
             </div>
-            <span>•</span>
+            <span aria-hidden="true">•</span>
             <div className="flex items-center space-x-1.5">
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <span>Last edited {new Date(workdoc.updatedAt).toLocaleDateString()}</span>
@@ -465,7 +488,7 @@ export default function WorkdocEditor() {
             />
           </div>
         </div>
-      </div>
+      </main>
 
       {/* Share Modal */}
       {workdoc && (
