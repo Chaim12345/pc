@@ -136,7 +136,8 @@ export default function WorkdocEditor() {
     return () => {
       clearTimeout(timeout)
     }
-  }, [title, content, hasUnsavedChanges, workdoc, updateMutation])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [title, content, hasUnsavedChanges, workdoc])
 
   const handleTitleChange = (newTitle: string) => {
     setTitle(newTitle)

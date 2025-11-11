@@ -186,32 +186,39 @@ export default function TipTapEditor({ content, onChange, placeholder }: Props) 
       const hasSelection = !selection.empty
 
       if (hasSelection) {
-        const { from, to } = selection
-        const start = editor.view.coordsAtPos(from)
-        const end = editor.view.coordsAtPos(to)
-        
-        // Position menu above selection
-        const top = start.top - 10
-        const left = (start.left + end.left) / 2
-        
-        setFloatingMenuPosition({ top, left })
-        setShowFloatingMenu(true)
+        try {
+          const { from, to } = selection
+          const start = editor.view.coordsAtPos(from)
+          const end = editor.view.coordsAtPos(to)
+          
+          // Position menu above selection
+          const top = start.top - 10
+          const left = (start.left + end.left) / 2
+          
+          setFloatingMenuPosition({ top, left })
+          setShowFloatingMenu(true)
+        } catch (e) {
+          // Ignore coordinate errors
+          setShowFloatingMenu(false)
+        }
       } else {
         setShowFloatingMenu(false)
       }
     }
 
-    editor.on('selectionUpdate', handleSelectionUpdate)
-    editor.on('focus', handleSelectionUpdate)
-    editor.on('blur', () => {
+    const handleBlur = () => {
       // Delay hiding to allow clicking menu buttons
       setTimeout(() => setShowFloatingMenu(false), 200)
-    })
+    }
+
+    editor.on('selectionUpdate', handleSelectionUpdate)
+    editor.on('focus', handleSelectionUpdate)
+    editor.on('blur', handleBlur)
 
     return () => {
       editor.off('selectionUpdate', handleSelectionUpdate)
       editor.off('focus', handleSelectionUpdate)
-      editor.off('blur')
+      editor.off('blur', handleBlur)
     }
   }, [editor])
 
