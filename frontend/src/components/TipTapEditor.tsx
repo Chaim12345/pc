@@ -399,32 +399,82 @@ export default function TipTapEditor({ content, onChange, placeholder }: Props) 
 
   const addTable = () => {
     if (!editor) return
-    editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
+    try {
+      editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
+    } catch (error) {
+      console.error('Failed to insert table:', error)
+      showToast('Failed to insert table', 'error')
+    }
   }
 
   const insertTableRow = () => {
-    if (!editor) return
-    editor.chain().focus().addRowAfter().run()
+    if (!editor || !editor.isActive('table')) return
+    try {
+      if (editor.can().addRowAfter()) {
+        editor.chain().focus().addRowAfter().run()
+      } else {
+        showToast('Cannot add row here', 'error')
+      }
+    } catch (error) {
+      console.error('Failed to add row:', error)
+      showToast('Failed to add row', 'error')
+    }
   }
 
   const deleteTableRow = () => {
-    if (!editor) return
-    editor.chain().focus().deleteRow().run()
+    if (!editor || !editor.isActive('table')) return
+    try {
+      if (editor.can().deleteRow()) {
+        editor.chain().focus().deleteRow().run()
+      } else {
+        showToast('Cannot delete row', 'error')
+      }
+    } catch (error) {
+      console.error('Failed to delete row:', error)
+      showToast('Failed to delete row', 'error')
+    }
   }
 
   const insertTableColumn = () => {
-    if (!editor) return
-    editor.chain().focus().addColumnAfter().run()
+    if (!editor || !editor.isActive('table')) return
+    try {
+      if (editor.can().addColumnAfter()) {
+        editor.chain().focus().addColumnAfter().run()
+      } else {
+        showToast('Cannot add column here', 'error')
+      }
+    } catch (error) {
+      console.error('Failed to add column:', error)
+      showToast('Failed to add column', 'error')
+    }
   }
 
   const deleteTableColumn = () => {
-    if (!editor) return
-    editor.chain().focus().deleteColumn().run()
+    if (!editor || !editor.isActive('table')) return
+    try {
+      if (editor.can().deleteColumn()) {
+        editor.chain().focus().deleteColumn().run()
+      } else {
+        showToast('Cannot delete column', 'error')
+      }
+    } catch (error) {
+      console.error('Failed to delete column:', error)
+      showToast('Failed to delete column', 'error')
+    }
   }
 
   const deleteTable = () => {
-    if (!editor) return
-    editor.chain().focus().deleteTable().run()
+    if (!editor || !editor.isActive('table')) return
+    try {
+      if (editor.can().deleteTable()) {
+        editor.chain().focus().deleteTable().run()
+      } else {
+        showToast('Cannot delete table', 'error')
+      }
+    } catch (error) {
+      console.error('Failed to delete table:', error)
+      showToast('Failed to delete table', 'error')
+    }
   }
 
   if (!editor) {
