@@ -37,6 +37,7 @@ export default function BoardView() {
   const [showAIAssistant, setShowAIAssistant] = useState(false)
   const [showGuestAccess, setShowGuestAccess] = useState(false)
   const [showRecurringTasks, setShowRecurringTasks] = useState(false)
+  const [showBoardOptions, setShowBoardOptions] = useState(false)
   const [showExport, setShowExport] = useState(false)
   const [showImport, setShowImport] = useState(false)
   const [showFilterModal, setShowFilterModal] = useState(false)
@@ -378,16 +379,82 @@ export default function BoardView() {
             <span className="text-xs text-monday-textLight dark:text-gray-400 hidden lg:inline whitespace-nowrap">
               {board.groups?.reduce((total, group) => total + (group.items?.length || 0), 0)} items
             </span>
-            <button
-              onClick={() => setShowBoardMenu(!showBoardMenu)}
-              className="p-1.5 rounded-lg hover:bg-monday-background dark:hover:bg-gray-800 transition-colors"
-              title="Board options"
-              aria-label="Board options"
-            >
-              <svg className="w-5 h-5 text-monday-textLight dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-              </svg>
-            </button>
+            <div className="relative">
+              <button
+                onClick={() => setShowBoardMenu(!showBoardMenu)}
+                className={`p-1.5 rounded-lg hover:bg-monday-background dark:hover:bg-gray-800 transition-colors ${showBoardMenu ? 'bg-monday-background dark:bg-gray-800' : ''}`}
+                title="Board options"
+                aria-label="Board options"
+              >
+                <svg className="w-5 h-5 text-monday-textLight dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                </svg>
+              </button>
+              {showBoardMenu && (
+                <>
+                  <div 
+                    className="fixed inset-0 z-40" 
+                    onClick={() => setShowBoardMenu(false)}
+                  ></div>
+                  <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-monday-darkLight rounded-lg shadow-lg border border-monday-border dark:border-gray-700 z-50 py-1">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setShowBoardMenu(false)
+                        // TODO: Implement board settings
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-monday-text dark:text-white hover:bg-monday-background dark:hover:bg-gray-800 flex items-center gap-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      Board Settings
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setShowBoardMenu(false)
+                        setShowExport(true)
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-monday-text dark:text-white hover:bg-monday-background dark:hover:bg-gray-800 flex items-center gap-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      Export Board
+                    </button>
+                    <div className="border-t border-monday-border dark:border-gray-700 my-1"></div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setShowBoardMenu(false)
+                        // TODO: Implement archive board
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-monday-text dark:text-white hover:bg-monday-background dark:hover:bg-gray-800 flex items-center gap-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                      </svg>
+                      Archive Board
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setShowBoardMenu(false)
+                        // TODO: Implement delete board with confirmation
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      Delete Board
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>

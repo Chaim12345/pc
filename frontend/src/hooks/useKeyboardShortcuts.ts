@@ -38,7 +38,20 @@ export function useKeyboardShortcuts({ boardId }: KeyboardShortcutsProps = {}) {
         const modals = document.querySelectorAll('[class*="fixed"][class*="inset-0"]')
         const lastModal = Array.from(modals).pop() as HTMLElement
         if (lastModal) {
-          const closeButton = lastModal.querySelector('button[aria-label*="close" i], button:contains("×")') as HTMLButtonElement
+          // Try aria-label first (case-insensitive)
+          let closeButton = lastModal.querySelector('button[aria-label*="close" i]') as HTMLButtonElement
+          
+          // If not found, try to find button with × character by checking text content
+          if (!closeButton) {
+            const buttons = lastModal.querySelectorAll('button')
+            for (const btn of Array.from(buttons)) {
+              if (btn.textContent?.includes('×') || btn.innerHTML.includes('×')) {
+                closeButton = btn
+                break
+              }
+            }
+          }
+          
           if (closeButton) {
             closeButton.click()
           }

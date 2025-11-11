@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth';
+import { logger } from '../utils/logger';
 
 const prisma = new PrismaClient();
 
@@ -35,7 +36,7 @@ export const recurringTasksController = {
 
       res.status(201).json({ success: true, data: recurringTask });
     } catch (error: any) {
-      console.error('Create recurring task error:', error);
+      logger.error('Create recurring task error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -52,7 +53,7 @@ export const recurringTasksController = {
 
       res.json({ success: true, data: tasks });
     } catch (error: any) {
-      console.error('Get recurring tasks error:', error);
+      logger.error('Get recurring tasks error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -79,7 +80,7 @@ export const recurringTasksController = {
 
       res.json({ success: true, data: task });
     } catch (error: any) {
-      console.error('Update recurring task error:', error);
+      logger.error('Update recurring task error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -95,7 +96,7 @@ export const recurringTasksController = {
 
       res.json({ success: true, message: 'Recurring task deleted' });
     } catch (error: any) {
-      console.error('Delete recurring task error:', error);
+      logger.error('Delete recurring task error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -158,7 +159,7 @@ export const recurringTasksController = {
 
       res.json({ success: true, data: { processed: results.length, results } });
     } catch (error: any) {
-      console.error('Run recurring tasks error:', error);
+      logger.error('Run recurring tasks error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   }

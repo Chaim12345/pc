@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../contexts/AuthContext'
@@ -28,9 +28,14 @@ export default function EnhancedUserManagement() {
   const [selectedUsers, setSelectedUsers] = useState<string[]>([])
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [showAddUserModal, setShowAddUserModal] = useState(false)
+  const [showUserDetailsModal, setShowUserDetailsModal] = useState(false)
+  const [showExportMenu, setShowExportMenu] = useState(false)
+  const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [inviteData, setInviteData] = useState({ email: '', name: '', role: 'MEMBER' })
   const [addUserData, setAddUserData] = useState({ email: '', role: 'MEMBER' })
   const [page, setPage] = useState(1)
+  const [sortBy, setSortBy] = useState<'name' | 'email' | 'status' | 'role' | 'createdAt'>('createdAt')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const limit = 20
 
   const { data: usersData, isLoading } = useQuery({
@@ -48,6 +53,56 @@ export default function EnhancedUserManagement() {
     },
     enabled: !!user,
   })
+
+  // Fetch user details
+  const { data: userDetails } = useQuery({
+    queryKey: ['user', selectedUser?.id],
+    queryFn: async () => {
+      if (!selectedUser) return null
+      const response = await api.get(`/users/${selectedUser.id}`)
+      return response.data.data
+    },
+    enabled: !!selectedUser,
+  })
+
+  // Calculate statistics
+  const statistics = useMemo(() => {
+    const users = usersData?.data || []
+    return {
+      total: usersData?.total || 0,
+      active: users.filter((u: User) => u.status === 'ACTIVE').length,
+      inactive: users.filter((u: User) => u.status === 'INACTIVE').length,
+      pending: users.filter((u: User) => u.status === 'PENDING').length,
+      suspended: users.filter((u: User) => u.status === 'SUSPENDED').length,
+      owners: users.filter((u: User) => u.role === 'OWNER').length,
+      admins: users.filter((u: User) => u.role === 'ADMIN').length,
+      members: users.filter((u: User) => u.role === 'MEMBER').length,
+      viewers: users.filter((u: User) => u.role === 'VIEWER').length,
+    }
+  }, [usersData])
+
+  // Sort users
+  const sortedUsers = useMemo(() => {
+    const users = usersData?.data || []
+    return [...users].sort((a: User, b: User) => {
+      let aVal: any = a[sortBy]
+      let bVal: any = b[sortBy]
+      
+      if (sortBy === 'createdAt' || sortBy === 'lastSeenAt') {
+        aVal = aVal ? new Date(aVal).getTime() : 0
+        bVal = bVal ? new Date(bVal).getTime() : 0
+      } else {
+        aVal = String(aVal || '').toLowerCase()
+        bVal = String(bVal || '').toLowerCase()
+      }
+      
+      if (sortOrder === 'asc') {
+        return aVal > bVal ? 1 : -1
+      } else {
+        return aVal < bVal ? 1 : -1
+      }
+    })
+  }, [usersData?.data, sortBy, sortOrder])
 
   const inviteUserMutation = useMutation({
     mutationFn: async (data: { email: string; name: string; role: string }) => {
@@ -67,8 +122,6 @@ export default function EnhancedUserManagement() {
 
   const addUserMutation = useMutation({
     mutationFn: async (data: { email: string; role: string }) => {
-      // For adding existing users, we still use invite endpoint but without name
-      // The backend will handle adding existing users to the organization
       const response = await api.post('/users/invite', { ...data, name: data.email.split('@')[0] })
       return response.data
     },
@@ -115,6 +168,8 @@ export default function EnhancedUserManagement() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users', 'all'] })
+      setShowUserDetailsModal(false)
+      setSelectedUser(null)
       showToast('User deleted successfully!', 'success')
     },
     onError: (error: any) => {
@@ -143,10 +198,10 @@ export default function EnhancedUserManagement() {
   }
 
   const handleSelectAll = () => {
-    if (selectedUsers.length === usersData?.data?.length) {
+    if (selectedUsers.length === sortedUsers.length && sortedUsers.length > 0) {
       setSelectedUsers([])
     } else {
-      setSelectedUsers(usersData?.data?.map((u: User) => u.id) || [])
+      setSelectedUsers(sortedUsers.map((u: User) => u.id))
     }
   }
 
@@ -164,6 +219,53 @@ export default function EnhancedUserManagement() {
     if (window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
       deleteUserMutation.mutate(userId)
     }
+  }
+
+  const handleViewUserDetails = (user: User) => {
+    setSelectedUser(user)
+    setShowUserDetailsModal(true)
+  }
+
+  const handleSort = (field: typeof sortBy) => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortBy(field)
+      setSortOrder('asc')
+    }
+  }
+
+  const exportUsers = (format: 'csv' | 'json') => {
+    const users = sortedUsers
+    if (format === 'csv') {
+      const headers = ['Name', 'Email', 'Status', 'Role', 'Last Seen', 'Created At']
+      const rows = users.map((u: User) => [
+        u.name,
+        u.email,
+        u.status,
+        u.role,
+        u.lastSeenAt ? new Date(u.lastSeenAt).toLocaleString() : 'Never',
+        new Date(u.createdAt).toLocaleString(),
+      ])
+      const csv = [headers, ...rows].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n')
+      const blob = new Blob([csv], { type: 'text/csv' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `users-export-${new Date().toISOString().split('T')[0]}.csv`
+      a.click()
+      URL.revokeObjectURL(url)
+    } else {
+      const json = JSON.stringify(users, null, 2)
+      const blob = new Blob([json], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `users-export-${new Date().toISOString().split('T')[0]}.json`
+      a.click()
+      URL.revokeObjectURL(url)
+    }
+    showToast(`Users exported as ${format.toUpperCase()}`, 'success')
   }
 
   const getStatusBadge = (status: string) => {
@@ -210,14 +312,32 @@ export default function EnhancedUserManagement() {
     return date.toLocaleDateString()
   }
 
-  const users = usersData?.data || []
+  const SortIcon = ({ field }: { field: typeof sortBy }) => {
+    if (sortBy !== field) {
+      return (
+        <svg className="w-4 h-4 ml-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+        </svg>
+      )
+    }
+    return sortOrder === 'asc' ? (
+      <svg className="w-4 h-4 ml-1 text-monday-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+      </svg>
+    ) : (
+      <svg className="w-4 h-4 ml-1 text-monday-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+      </svg>
+    )
+  }
+
   const total = usersData?.total || 0
   const totalPages = usersData?.totalPages || 1
 
   return (
     <div className="flex h-screen w-full bg-monday-background dark:bg-monday-dark overflow-hidden">
       {/* Sidebar */}
-      <aside className="w-72 bg-white dark:bg-monday-darkLight border-r border-monday-border dark:border-gray-700 flex flex-col shadow-lg">
+      <aside className="w-80 bg-white dark:bg-monday-darkLight border-r border-monday-border dark:border-gray-700 flex flex-col shadow-lg">
         <div className="p-6 border-b border-monday-border dark:border-gray-700">
           <button
             onClick={() => navigate('/dashboard')}
@@ -230,41 +350,64 @@ export default function EnhancedUserManagement() {
           </button>
         </div>
 
+        {/* Statistics */}
+        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+          <h3 className="text-sm font-semibold text-monday-text dark:text-white mb-4">Statistics</h3>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+              <div className="text-xs text-blue-600 dark:text-blue-400 mb-1">Total Users</div>
+              <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">{statistics.total}</div>
+            </div>
+            <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
+              <div className="text-xs text-green-600 dark:text-green-400 mb-1">Active</div>
+              <div className="text-2xl font-bold text-green-700 dark:text-green-300">{statistics.active}</div>
+            </div>
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg">
+              <div className="text-xs text-yellow-600 dark:text-yellow-400 mb-1">Pending</div>
+              <div className="text-2xl font-bold text-yellow-700 dark:text-yellow-300">{statistics.pending}</div>
+            </div>
+            <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
+              <div className="text-xs text-red-600 dark:text-red-400 mb-1">Suspended</div>
+              <div className="text-2xl font-bold text-red-700 dark:text-red-300">{statistics.suspended}</div>
+            </div>
+          </div>
+        </div>
+
         {/* Filters */}
         <div className="p-6 space-y-4 flex-1 overflow-y-auto">
           <div>
-            <h3 className="text-sm font-semibold text-monday-text dark:text-white mb-2">Status</h3>
+            <h3 className="text-sm font-semibold text-monday-text dark:text-white mb-2">Status Filter</h3>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-monday-dark text-monday-text dark:text-white text-sm"
             >
               <option value="ALL">All Statuses</option>
-              <option value="ACTIVE">Active</option>
-              <option value="INACTIVE">Inactive</option>
-              <option value="SUSPENDED">Suspended</option>
-              <option value="PENDING">Pending</option>
+              <option value="ACTIVE">Active ({statistics.active})</option>
+              <option value="INACTIVE">Inactive ({statistics.inactive})</option>
+              <option value="SUSPENDED">Suspended ({statistics.suspended})</option>
+              <option value="PENDING">Pending ({statistics.pending})</option>
             </select>
           </div>
 
           <div>
-            <h3 className="text-sm font-semibold text-monday-text dark:text-white mb-2">Role</h3>
+            <h3 className="text-sm font-semibold text-monday-text dark:text-white mb-2">Role Filter</h3>
             <select
               value={roleFilter}
               onChange={(e) => setRoleFilter(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-monday-dark text-monday-text dark:text-white text-sm"
             >
               <option value="ALL">All Roles</option>
-              <option value="OWNER">Owner</option>
-              <option value="ADMIN">Admin</option>
-              <option value="MEMBER">Member</option>
-              <option value="VIEWER">Viewer</option>
+              <option value="OWNER">Owner ({statistics.owners})</option>
+              <option value="ADMIN">Admin ({statistics.admins})</option>
+              <option value="MEMBER">Member ({statistics.members})</option>
+              <option value="VIEWER">Viewer ({statistics.viewers})</option>
             </select>
           </div>
 
           <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-            <div className="text-sm text-monday-textLight dark:text-gray-400">
-              <div className="flex justify-between mb-2">
+            <div className="text-sm text-monday-textLight dark:text-gray-400 space-y-2">
+              <div className="flex justify-between">
                 <span>Total Users:</span>
                 <span className="font-semibold">{total}</span>
               </div>
@@ -291,6 +434,11 @@ export default function EnhancedUserManagement() {
                       if (window.confirm(`Delete ${selectedUsers.length} selected user(s)?`)) {
                         bulkUpdateMutation.mutate({ action: 'delete' })
                       }
+                    } else if (e.target.value === 'updateRole') {
+                      const role = window.prompt('Enter role (OWNER, ADMIN, MEMBER, VIEWER):')
+                      if (role && ['OWNER', 'ADMIN', 'MEMBER', 'VIEWER'].includes(role.toUpperCase())) {
+                        bulkUpdateMutation.mutate({ action: 'updateRole', value: role.toUpperCase() })
+                      }
                     } else {
                       bulkUpdateMutation.mutate({ action: 'updateStatus', value: e.target.value })
                     }
@@ -302,6 +450,7 @@ export default function EnhancedUserManagement() {
                   <option value="ACTIVE">Activate</option>
                   <option value="INACTIVE">Deactivate</option>
                   <option value="SUSPENDED">Suspend</option>
+                  <option value="updateRole">Change Role</option>
                   <option value="delete">Delete</option>
                 </select>
                 <span className="text-sm text-monday-textLight dark:text-gray-400">
@@ -309,6 +458,45 @@ export default function EnhancedUserManagement() {
                 </span>
               </>
             )}
+            <div className="relative">
+              <button
+                onClick={() => setShowExportMenu(!showExportMenu)}
+                className="px-5 py-2.5 bg-white dark:bg-monday-dark hover:bg-monday-background dark:hover:bg-gray-800 text-monday-text dark:text-white rounded-lg font-medium flex items-center space-x-2 transition-all hover:scale-105 border border-monday-border dark:border-gray-700"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span>Export</span>
+              </button>
+              {showExportMenu && (
+                <>
+                  <div 
+                    className="fixed inset-0 z-10" 
+                    onClick={() => setShowExportMenu(false)}
+                  />
+                  <div className="absolute right-0 mt-2 w-32 bg-white dark:bg-monday-darkLight rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-20">
+                    <button
+                      onClick={() => {
+                        exportUsers('csv')
+                        setShowExportMenu(false)
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm text-monday-text dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-t-lg"
+                    >
+                      Export CSV
+                    </button>
+                    <button
+                      onClick={() => {
+                        exportUsers('json')
+                        setShowExportMenu(false)
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm text-monday-text dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-b-lg"
+                    >
+                      Export JSON
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
             <button
               onClick={() => setShowAddUserModal(true)}
               className="px-5 py-2.5 bg-white dark:bg-monday-dark hover:bg-monday-background dark:hover:bg-gray-800 text-monday-text dark:text-white rounded-lg font-medium flex items-center space-x-2 transition-all hover:scale-105 border border-monday-border dark:border-gray-700"
@@ -352,7 +540,7 @@ export default function EnhancedUserManagement() {
             <div className="flex items-center justify-center h-64">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-monday-primary"></div>
             </div>
-          ) : users.length > 0 ? (
+          ) : sortedUsers.length > 0 ? (
             <>
               <div className="bg-white dark:bg-monday-darkLight rounded-xl shadow-monday overflow-hidden">
                 <table className="w-full">
@@ -361,19 +549,46 @@ export default function EnhancedUserManagement() {
                       <th className="px-6 py-3 text-left">
                         <input
                           type="checkbox"
-                          checked={selectedUsers.length === users.length && users.length > 0}
+                          checked={selectedUsers.length === sortedUsers.length && sortedUsers.length > 0}
                           onChange={handleSelectAll}
                           className="w-4 h-4 text-monday-primary rounded focus:ring-2 focus:ring-monday-primary"
                         />
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-monday-textLight dark:text-gray-400 uppercase tracking-wider">
-                        User
+                      <th 
+                        className="px-6 py-3 text-left text-xs font-medium text-monday-textLight dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                        onClick={() => handleSort('name')}
+                      >
+                        <div className="flex items-center">
+                          User
+                          <SortIcon field="name" />
+                        </div>
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-monday-textLight dark:text-gray-400 uppercase tracking-wider">
-                        Status
+                      <th 
+                        className="px-6 py-3 text-left text-xs font-medium text-monday-textLight dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                        onClick={() => handleSort('status')}
+                      >
+                        <div className="flex items-center">
+                          Status
+                          <SortIcon field="status" />
+                        </div>
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-monday-textLight dark:text-gray-400 uppercase tracking-wider">
-                        Role
+                      <th 
+                        className="px-6 py-3 text-left text-xs font-medium text-monday-textLight dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                        onClick={() => handleSort('role')}
+                      >
+                        <div className="flex items-center">
+                          Role
+                          <SortIcon field="role" />
+                        </div>
+                      </th>
+                      <th 
+                        className="px-6 py-3 text-left text-xs font-medium text-monday-textLight dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                        onClick={() => handleSort('createdAt')}
+                      >
+                        <div className="flex items-center">
+                          Joined
+                          <SortIcon field="createdAt" />
+                        </div>
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-monday-textLight dark:text-gray-400 uppercase tracking-wider">
                         Last Seen
@@ -384,7 +599,7 @@ export default function EnhancedUserManagement() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                    {users.map((u: User) => (
+                    {sortedUsers.map((u: User) => (
                       <tr key={u.id} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                         <td className="px-6 py-4">
                           <input
@@ -396,9 +611,13 @@ export default function EnhancedUserManagement() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center space-x-3">
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-monday-primary to-monday-purple flex items-center justify-center text-white font-semibold">
-                              {getInitials(u.name)}
-                            </div>
+                            {u.avatar ? (
+                              <img src={u.avatar} alt={u.name} className="w-10 h-10 rounded-full" />
+                            ) : (
+                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-monday-primary to-monday-purple flex items-center justify-center text-white font-semibold">
+                                {getInitials(u.name)}
+                              </div>
+                            )}
                             <div>
                               <div className="font-medium text-monday-text dark:text-white">{u.name}</div>
                               <div className="text-sm text-monday-textLight dark:text-gray-400">{u.email}</div>
@@ -430,18 +649,33 @@ export default function EnhancedUserManagement() {
                           </select>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-monday-textLight dark:text-gray-400">
+                          {new Date(u.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-monday-textLight dark:text-gray-400">
                           {u.lastSeenAt ? getRelativeTime(u.lastSeenAt) : 'Never'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <button
-                            onClick={() => handleDeleteUser(u.id)}
-                            className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
-                            title="Delete user"
-                          >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
+                          <div className="flex items-center space-x-2">
+                            <button
+                              onClick={() => handleViewUserDetails(u)}
+                              className="text-monday-primary hover:text-monday-primaryHover"
+                              title="View details"
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={() => handleDeleteUser(u.id)}
+                              className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                              title="Delete user"
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -488,6 +722,89 @@ export default function EnhancedUserManagement() {
           )}
         </main>
       </div>
+
+      {/* User Details Modal */}
+      {showUserDetailsModal && selectedUser && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowUserDetailsModal(false)}>
+          <div className="bg-white dark:bg-monday-darkLight rounded-xl shadow-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-monday-text dark:text-white">User Details</h2>
+              <button
+                onClick={() => {
+                  setShowUserDetailsModal(false)
+                  setSelectedUser(null)
+                }}
+                className="text-monday-textLight dark:text-gray-400 hover:text-monday-text dark:hover:text-white"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              <div className="flex items-center space-x-4">
+                {selectedUser.avatar ? (
+                  <img src={selectedUser.avatar} alt={selectedUser.name} className="w-20 h-20 rounded-full" />
+                ) : (
+                  <div className="w-20 h-20 rounded-full bg-gradient-to-br from-monday-primary to-monday-purple flex items-center justify-center text-white text-2xl font-semibold">
+                    {getInitials(selectedUser.name)}
+                  </div>
+                )}
+                <div>
+                  <h3 className="text-xl font-bold text-monday-text dark:text-white">{selectedUser.name}</h3>
+                  <p className="text-monday-textLight dark:text-gray-400">{selectedUser.email}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+                  <div className="text-sm text-monday-textLight dark:text-gray-400 mb-1">Status</div>
+                  <div className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${getStatusBadge(selectedUser.status)}`}>
+                    {selectedUser.status}
+                  </div>
+                </div>
+                <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+                  <div className="text-sm text-monday-textLight dark:text-gray-400 mb-1">Role</div>
+                  <div className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${getRoleBadge(selectedUser.role)}`}>
+                    {selectedUser.role}
+                  </div>
+                </div>
+                <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+                  <div className="text-sm text-monday-textLight dark:text-gray-400 mb-1">Joined</div>
+                  <div className="text-monday-text dark:text-white font-medium">
+                    {new Date(selectedUser.createdAt).toLocaleDateString()}
+                  </div>
+                </div>
+                <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+                  <div className="text-sm text-monday-textLight dark:text-gray-400 mb-1">Last Seen</div>
+                  <div className="text-monday-text dark:text-white font-medium">
+                    {selectedUser.lastSeenAt ? getRelativeTime(selectedUser.lastSeenAt) : 'Never'}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <button
+                  onClick={() => {
+                    const newStatus = selectedUser.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE'
+                    updateStatusMutation.mutate({ userId: selectedUser.id, status: newStatus })
+                  }}
+                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-monday-text dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                >
+                  {selectedUser.status === 'ACTIVE' ? 'Suspend' : 'Activate'}
+                </button>
+                <button
+                  onClick={() => handleDeleteUser(selectedUser.id)}
+                  className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors"
+                >
+                  Delete User
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Add User Modal */}
       {showAddUserModal && (
@@ -627,4 +944,3 @@ export default function EnhancedUserManagement() {
     </div>
   )
 }
-

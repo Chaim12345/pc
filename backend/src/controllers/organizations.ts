@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth';
+import { logger } from '../utils/logger';
 
 const prisma = new PrismaClient();
 
@@ -20,7 +21,7 @@ export const organizationController = {
 
       res.json({ success: true, data: organizations });
     } catch (error: any) {
-      console.error('Get organizations error:', error);
+      logger.error('Get organizations error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -46,7 +47,7 @@ export const organizationController = {
 
       res.json({ success: true, data: membership.organization });
     } catch (error: any) {
-      console.error('Get organization error:', error);
+      logger.error('Get organization error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -70,7 +71,7 @@ export const organizationController = {
 
       res.status(201).json({ success: true, data: organization });
     } catch (error: any) {
-      console.error('Create organization error:', error);
+      logger.error('Create organization error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -87,7 +88,7 @@ export const organizationController = {
 
       res.json({ success: true, data: organization });
     } catch (error: any) {
-      console.error('Update organization error:', error);
+      logger.error('Update organization error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -102,7 +103,7 @@ export const organizationController = {
 
       res.json({ success: true, message: 'Organization deleted' });
     } catch (error: any) {
-      console.error('Delete organization error:', error);
+      logger.error('Delete organization error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   }

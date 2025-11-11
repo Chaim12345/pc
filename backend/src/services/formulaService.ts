@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { logger } from '../utils/logger';
 
 const prisma = new PrismaClient();
 
@@ -30,7 +31,7 @@ export class FormulaService {
         return this.evaluateExpression(cleanFormula, itemId);
       }
     } catch (error) {
-      console.error('Formula evaluation error:', error);
+      logger.error('Formula evaluation error:', { error, formula, itemId });
       return '#ERROR';
     }
   }

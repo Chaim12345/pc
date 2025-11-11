@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth';
+import { logger } from '../utils/logger';
 
 const prisma = new PrismaClient();
 
@@ -23,7 +24,7 @@ export const webhookController = {
 
       res.status(201).json({ success: true, data: webhook });
     } catch (error: any) {
-      console.error('Create webhook error:', error);
+      logger.error('Create webhook error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -38,7 +39,7 @@ export const webhookController = {
 
       res.json({ success: true, message: 'Webhook triggered' });
     } catch (error: any) {
-      console.error('Trigger webhook error:', error);
+      logger.error('Trigger webhook error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   }
@@ -50,7 +51,7 @@ export async function triggerWebhooks(boardId: string, event: string, data: any)
     // In production, fetch webhooks from database and send HTTP requests
     // For now, this is a placeholder
   } catch (error) {
-    console.error('Error triggering webhooks:', error);
+    logger.error('Error triggering webhooks:', { error, boardId, event });
   }
 }
 

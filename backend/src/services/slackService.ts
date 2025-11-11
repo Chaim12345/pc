@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { logger } from '../utils/logger';
 
 export class SlackService {
   /**
@@ -16,7 +17,7 @@ export class SlackService {
         icon_emoji: ':rocket:'
       });
     } catch (error: any) {
-      console.error('Slack notification error:', error.response?.data || error.message);
+      logger.error('Slack notification error:', { error: error.response?.data || error.message });
       throw new Error('Failed to send Slack notification');
     }
   }
@@ -58,7 +59,7 @@ export class SlackService {
         ]
       });
     } catch (error: any) {
-      console.error('Slack rich notification error:', error.response?.data || error.message);
+      logger.error('Slack rich notification error:', { error: error.response?.data || error.message });
       throw new Error('Failed to send Slack notification');
     }
   }

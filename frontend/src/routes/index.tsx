@@ -13,7 +13,7 @@ import NotificationSettings from '../pages/Settings/NotificationSettings'
 import PreferencesSettings from '../pages/Settings/PreferencesSettings'
 import Teams from '../pages/Teams'
 import TeamSettingsPage from '../pages/TeamSettingsPage'
-import UserManagement from '../pages/UserManagement'
+import UserManagement from '../pages/EnhancedUserManagement'
 import Workdocs from '../pages/Workdocs'
 import WorkdocEditor from '../pages/WorkdocEditor'
 import FormsPage from '../pages/FormsPage'
@@ -29,7 +29,14 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
 
   if (loading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-monday-background dark:bg-monday-dark">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-monday-primary mb-4"></div>
+          <p className="text-monday-text dark:text-white">Loading...</p>
+        </div>
+      </div>
+    )
   }
 
   return user ? <>{children}</> : <Navigate to="/login" />

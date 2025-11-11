@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth';
+import { logger } from '../utils/logger';
 
 const prisma = new PrismaClient();
 
@@ -8,14 +9,34 @@ export const dashboardController = {
   async getAll(req: AuthRequest, res: Response) {
     try {
       const userId = req.userId!;
+      const { organizationId } = req.params;
 
-      // Get user's organizations
-      const orgMemberships = await prisma.organizationMember.findMany({
-        where: { userId },
-        select: { organizationId: true }
-      });
+      // If organizationId is provided, filter by it; otherwise get all user's organizations
+      let orgIds: string[];
+      
+      if (organizationId) {
+        // Verify user has access to this organization
+        const membership = await prisma.organizationMember.findFirst({
+          where: {
+            userId,
+            organizationId
+          }
+        });
 
-      const orgIds = orgMemberships.map(m => m.organizationId);
+        if (!membership) {
+          return res.status(404).json({ success: false, error: 'Organization not found or access denied' });
+        }
+
+        orgIds = [organizationId];
+      } else {
+        // Get user's organizations
+        const orgMemberships = await prisma.organizationMember.findMany({
+          where: { userId },
+          select: { organizationId: true }
+        });
+
+        orgIds = orgMemberships.map(m => m.organizationId);
+      }
 
       const dashboards = await prisma.dashboard.findMany({
         where: {
@@ -29,7 +50,7 @@ export const dashboardController = {
 
       res.json({ success: true, data: dashboards });
     } catch (error: any) {
-      console.error('Get dashboards error:', error);
+      logger.error('Get dashboards error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -51,7 +72,7 @@ export const dashboardController = {
 
       res.json({ success: true, data: dashboard });
     } catch (error: any) {
-      console.error('Get dashboard error:', error);
+      logger.error('Get dashboard error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -75,7 +96,7 @@ export const dashboardController = {
 
       res.status(201).json({ success: true, data: dashboard });
     } catch (error: any) {
-      console.error('Create dashboard error:', error);
+      logger.error('Create dashboard error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -121,7 +142,7 @@ export const dashboardController = {
 
       res.json({ success: true, data: updatedDashboard });
     } catch (error: any) {
-      console.error('Update dashboard error:', error);
+      logger.error('Update dashboard error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -136,7 +157,7 @@ export const dashboardController = {
 
       res.json({ success: true, message: 'Dashboard deleted' });
     } catch (error: any) {
-      console.error('Delete dashboard error:', error);
+      logger.error('Delete dashboard error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   }

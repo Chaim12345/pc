@@ -13,6 +13,9 @@ import FileUploadColumn from '../components/FileUploadColumn'
 import ItemRow from '../components/ItemRow';
 import { SortRule } from '../components/SortModal'
 import { logger } from '../utils/logger'
+import Modal from '../components/Modal'
+import ConfirmationDialog from '../components/ConfirmationDialog'
+import { useToast } from '../contexts/ToastContext'
 
 interface TableViewProps {
   board: Board
@@ -23,10 +26,20 @@ interface TableViewProps {
 export default function TableView({ board, sortRules = [], onSortChange }: TableViewProps) {
   const { socket } = useSocket()
   const queryClient = useQueryClient()
+  const { showToast } = useToast()
   const [editingCell, setEditingCell] = useState<{ itemId: string; columnId: string } | null>(null)
   const [editValue, setEditValue] = useState<any>(null)
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
   const [showAddItemModal, setShowAddItemModal] = useState<{ groupId: string; name: string } | null>(null)
+  const [showGroupOptions, setShowGroupOptions] = useState<string | null>(null)
+  const [showColumnOptions, setShowColumnOptions] = useState<string | null>(null)
+  const [renameGroupId, setRenameGroupId] = useState<string | null>(null)
+  const [renameGroupName, setRenameGroupName] = useState<string>('')
+  const [deleteGroupId, setDeleteGroupId] = useState<string | null>(null)
+  const [editColumnId, setEditColumnId] = useState<string | null>(null)
+  const [editColumnTitle, setEditColumnTitle] = useState<string>('')
+  const [deleteColumnId, setDeleteColumnId] = useState<string | null>(null)
+  const [hiddenColumns, setHiddenColumns] = useState<Set<string>>(new Set())
 
   // Handle column header click for sorting - memoized
   const handleColumnSort = useCallback((columnId: string) => {
@@ -154,6 +167,74 @@ export default function TableView({ board, sortRules = [], onSortChange }: Table
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['board', board.id] })
+    },
+  })
+
+  // Group mutations
+  const renameGroupMutation = useMutation({
+    mutationFn: async ({ groupId, title }: { groupId: string; title: string }) => {
+      const response = await api.put(`/groups/${groupId}`, { title })
+      return response.data.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['board', board.id] })
+      socket?.emit(SocketEvent.BOARD_UPDATED, { boardId: board.id })
+      showToast('Group renamed successfully', 'success')
+      setRenameGroupId(null)
+      setRenameGroupName('')
+    },
+    onError: (error: any) => {
+      showToast(error.response?.data?.error || 'Failed to rename group', 'error')
+    },
+  })
+
+  const deleteGroupMutation = useMutation({
+    mutationFn: async (groupId: string) => {
+      const response = await api.delete(`/groups/${groupId}`)
+      return response.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['board', board.id] })
+      socket?.emit(SocketEvent.BOARD_UPDATED, { boardId: board.id })
+      showToast('Group deleted successfully', 'success')
+      setDeleteGroupId(null)
+    },
+    onError: (error: any) => {
+      showToast(error.response?.data?.error || 'Failed to delete group', 'error')
+    },
+  })
+
+  // Column mutations
+  const updateColumnMutation = useMutation({
+    mutationFn: async ({ columnId, title }: { columnId: string; title: string }) => {
+      const response = await api.put(`/columns/${columnId}`, { title })
+      return response.data.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['board', board.id] })
+      socket?.emit(SocketEvent.COLUMN_UPDATED, { boardId: board.id })
+      showToast('Column updated successfully', 'success')
+      setEditColumnId(null)
+      setEditColumnTitle('')
+    },
+    onError: (error: any) => {
+      showToast(error.response?.data?.error || 'Failed to update column', 'error')
+    },
+  })
+
+  const deleteColumnMutation = useMutation({
+    mutationFn: async (columnId: string) => {
+      const response = await api.delete(`/columns/${columnId}`)
+      return response.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['board', board.id] })
+      socket?.emit(SocketEvent.COLUMN_UPDATED, { boardId: board.id })
+      showToast('Column deleted successfully', 'success')
+      setDeleteColumnId(null)
+    },
+    onError: (error: any) => {
+      showToast(error.response?.data?.error || 'Failed to delete column', 'error')
     },
   })
 
@@ -411,7 +492,7 @@ export default function TableView({ board, sortRules = [], onSortChange }: Table
                   <span>Item</span>
                 </div>
               </th>
-              {board.columns?.map((column) => {
+                     {board.columns?.filter(col => !hiddenColumns.has(col.id)).map((column) => {
                 const sortDirection = getSortDirection(column.id)
                 const isSorted = sortDirection !== null
                 
@@ -447,17 +528,87 @@ export default function TableView({ board, sortRules = [], onSortChange }: Table
                           </svg>
                         )}
                       </div>
-                      <button 
-                        className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-all ml-2" 
-                        title="Column options"
-                        onClick={(e) => {
-                          e.stopPropagation() // Prevent triggering sort
-                        }}
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-                        </svg>
-                      </button>
+                      <div className="relative">
+                        <button 
+                          className={`opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-all ml-2 ${showColumnOptions === column.id ? 'opacity-100 bg-gray-200 dark:bg-gray-700' : ''}`}
+                          title="Column options"
+                          onClick={(e) => {
+                            e.stopPropagation() // Prevent triggering sort
+                            setShowColumnOptions(showColumnOptions === column.id ? null : column.id)
+                          }}
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                          </svg>
+                        </button>
+                        {showColumnOptions === column.id && (
+                          <>
+                            <div 
+                              className="fixed inset-0 z-40" 
+                              onClick={() => setShowColumnOptions(null)}
+                            ></div>
+                            <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-monday-darkLight rounded-lg shadow-lg border border-monday-border dark:border-gray-700 z-50 py-1">
+                                     <button
+                                       onClick={(e) => {
+                                         e.stopPropagation()
+                                         setShowColumnOptions(null)
+                                         const col = board.columns?.find(c => c.id === column.id)
+                                         if (col) {
+                                           setEditColumnTitle(col.title)
+                                           setEditColumnId(col.id)
+                                         }
+                                       }}
+                                       className="w-full px-4 py-2 text-left text-sm text-monday-text dark:text-white hover:bg-monday-background dark:hover:bg-gray-800 flex items-center gap-2"
+                                     >
+                                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                       </svg>
+                                       Edit Column
+                                     </button>
+                                     <button
+                                       onClick={(e) => {
+                                         e.stopPropagation()
+                                         setShowColumnOptions(null)
+                                         setHiddenColumns(prev => {
+                                           const newSet = new Set(prev)
+                                           if (newSet.has(column.id)) {
+                                             newSet.delete(column.id)
+                                           } else {
+                                             newSet.add(column.id)
+                                           }
+                                           return newSet
+                                         })
+                                         showToast(
+                                           hiddenColumns.has(column.id) 
+                                             ? 'Column shown' 
+                                             : 'Column hidden', 
+                                           'success'
+                                         )
+                                       }}
+                                       className="w-full px-4 py-2 text-left text-sm text-monday-text dark:text-white hover:bg-monday-background dark:hover:bg-gray-800 flex items-center gap-2"
+                                     >
+                                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.29 3.29m0 0L3 9.88m3.29-3.29L9.88 9.88" />
+                                       </svg>
+                                       {hiddenColumns.has(column.id) ? 'Show Column' : 'Hide Column'}
+                                     </button>
+                                     <button
+                                       onClick={(e) => {
+                                         e.stopPropagation()
+                                         setShowColumnOptions(null)
+                                         setDeleteColumnId(column.id)
+                                       }}
+                                       className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
+                                     >
+                                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                       </svg>
+                                       Delete Column
+                                     </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </th>
                 )
@@ -481,11 +632,60 @@ export default function TableView({ board, sortRules = [], onSortChange }: Table
                         </span>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <button className="p-1.5 hover:bg-white dark:hover:bg-monday-dark rounded transition-all" title="Group options">
-                          <svg className="w-4 h-4 text-monday-textLight" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-                          </svg>
-                        </button>
+                        <div className="relative">
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setShowGroupOptions(showGroupOptions === group.id ? null : group.id)
+                            }}
+                            className={`p-1.5 hover:bg-white dark:hover:bg-monday-dark rounded transition-all ${showGroupOptions === group.id ? 'bg-white dark:bg-monday-dark' : ''}`}
+                            title="Group options"
+                          >
+                            <svg className="w-4 h-4 text-monday-textLight" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                            </svg>
+                          </button>
+                          {showGroupOptions === group.id && (
+                            <>
+                              <div 
+                                className="fixed inset-0 z-40" 
+                                onClick={() => setShowGroupOptions(null)}
+                              ></div>
+                              <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-monday-darkLight rounded-lg shadow-lg border border-monday-border dark:border-gray-700 z-50 py-1">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setShowGroupOptions(null)
+                                    const currentGroup = board.groups?.find(g => g.id === group.id)
+                                    if (currentGroup) {
+                                      setRenameGroupName(currentGroup.title)
+                                      setRenameGroupId(currentGroup.id)
+                                    }
+                                  }}
+                                  className="w-full px-4 py-2 text-left text-sm text-monday-text dark:text-white hover:bg-monday-background dark:hover:bg-gray-800 flex items-center gap-2"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                  </svg>
+                                  Rename Group
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setShowGroupOptions(null)
+                                    setDeleteGroupId(group.id)
+                                  }}
+                                  className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                  </svg>
+                                  Delete Group
+                                </button>
+                              </div>
+                            </>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </td>
@@ -581,6 +781,146 @@ export default function TableView({ board, sortRules = [], onSortChange }: Table
           onClose={() => setSelectedItemId(null)}
         />
       )}
+
+      {/* Rename Group Modal */}
+      <Modal
+        isOpen={!!renameGroupId}
+        onClose={() => {
+          setRenameGroupId(null)
+          setRenameGroupName('')
+        }}
+        title="Rename Group"
+        size="md"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-monday-text dark:text-white mb-2">
+              Group Name
+            </label>
+            <input
+              type="text"
+              value={renameGroupName}
+              onChange={(e) => setRenameGroupName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && renameGroupName.trim() && renameGroupId) {
+                  renameGroupMutation.mutate({ groupId: renameGroupId, title: renameGroupName.trim() })
+                }
+              }}
+              className="w-full px-4 py-2 border-2 border-monday-border dark:border-gray-700 rounded-lg bg-white dark:bg-monday-dark text-monday-text dark:text-white focus:outline-none focus:ring-2 focus:ring-monday-primary"
+              autoFocus
+              placeholder="Enter group name"
+            />
+          </div>
+          <div className="flex justify-end gap-2">
+            <button
+              onClick={() => {
+                setRenameGroupId(null)
+                setRenameGroupName('')
+              }}
+              className="px-4 py-2 text-sm font-medium text-monday-text dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => {
+                if (renameGroupName.trim() && renameGroupId) {
+                  renameGroupMutation.mutate({ groupId: renameGroupId, title: renameGroupName.trim() })
+                }
+              }}
+              disabled={!renameGroupName.trim() || renameGroupMutation.isPending}
+              className="px-4 py-2 text-sm font-medium text-white bg-monday-primary hover:bg-monday-primaryHover rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {renameGroupMutation.isPending ? 'Saving...' : 'Save'}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Delete Group Confirmation */}
+      <ConfirmationDialog
+        isOpen={!!deleteGroupId}
+        title="Delete Group"
+        message={`Are you sure you want to delete this group? All items in this group will also be deleted. This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+        onConfirm={() => {
+          if (deleteGroupId) {
+            deleteGroupMutation.mutate(deleteGroupId)
+          }
+        }}
+        onCancel={() => setDeleteGroupId(null)}
+      />
+
+      {/* Edit Column Modal */}
+      <Modal
+        isOpen={!!editColumnId}
+        onClose={() => {
+          setEditColumnId(null)
+          setEditColumnTitle('')
+        }}
+        title="Edit Column"
+        size="md"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-monday-text dark:text-white mb-2">
+              Column Title
+            </label>
+            <input
+              type="text"
+              value={editColumnTitle}
+              onChange={(e) => setEditColumnTitle(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && editColumnTitle.trim() && editColumnId) {
+                  updateColumnMutation.mutate({ columnId: editColumnId, title: editColumnTitle.trim() })
+                }
+              }}
+              className="w-full px-4 py-2 border-2 border-monday-border dark:border-gray-700 rounded-lg bg-white dark:bg-monday-dark text-monday-text dark:text-white focus:outline-none focus:ring-2 focus:ring-monday-primary"
+              autoFocus
+              placeholder="Enter column title"
+            />
+          </div>
+          <div className="flex justify-end gap-2">
+            <button
+              onClick={() => {
+                setEditColumnId(null)
+                setEditColumnTitle('')
+              }}
+              className="px-4 py-2 text-sm font-medium text-monday-text dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => {
+                if (editColumnTitle.trim() && editColumnId) {
+                  updateColumnMutation.mutate({ columnId: editColumnId, title: editColumnTitle.trim() })
+                }
+              }}
+              disabled={!editColumnTitle.trim() || updateColumnMutation.isPending}
+              className="px-4 py-2 text-sm font-medium text-white bg-monday-primary hover:bg-monday-primaryHover rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {updateColumnMutation.isPending ? 'Saving...' : 'Save'}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Delete Column Confirmation */}
+      <ConfirmationDialog
+        isOpen={!!deleteColumnId}
+        title="Delete Column"
+        message={`Are you sure you want to delete this column? All values in this column will be permanently deleted. This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+        onConfirm={() => {
+          if (deleteColumnId) {
+            deleteColumnMutation.mutate(deleteColumnId)
+          }
+        }}
+        onCancel={() => setDeleteColumnId(null)}
+      />
     </div>
   )
 }

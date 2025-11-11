@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth';
+import { logger } from '../utils/logger';
 
 const prisma = new PrismaClient();
 
@@ -33,7 +34,7 @@ export const dependenciesController = {
 
       res.status(201).json({ success: true, data: dependency });
     } catch (error: any) {
-      console.error('Create dependency error:', error);
+      logger.error('Create dependency error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -82,7 +83,7 @@ export const dependenciesController = {
         }
       });
     } catch (error: any) {
-      console.error('Get dependencies error:', error);
+      logger.error('Get dependencies error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -106,7 +107,7 @@ export const dependenciesController = {
 
       res.json({ success: true, data: dependencies });
     } catch (error: any) {
-      console.error('Get board dependencies error:', error);
+      logger.error('Get board dependencies error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -122,7 +123,7 @@ export const dependenciesController = {
 
       res.json({ success: true, message: 'Dependency deleted' });
     } catch (error: any) {
-      console.error('Delete dependency error:', error);
+      logger.error('Delete dependency error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -154,7 +155,7 @@ export const dependenciesController = {
 
       res.json({ success: true, data: criticalPath });
     } catch (error: any) {
-      console.error('Get critical path error:', error);
+      logger.error('Get critical path error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -205,7 +206,7 @@ export const dependenciesController = {
 
       res.json({ success: true, data: blockedItems });
     } catch (error: any) {
-      console.error('Get blocked items error:', error);
+      logger.error('Get blocked items error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   }

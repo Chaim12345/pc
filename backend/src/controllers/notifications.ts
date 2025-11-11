@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth';
+import { logger } from '../utils/logger';
 
 const prisma = new PrismaClient();
 
@@ -37,7 +38,7 @@ export const notificationsController = {
         },
       });
     } catch (error) {
-      console.error('Get notifications error:', error);
+      logger.error('Get notifications error:', error);
       res.status(500).json({ success: false, error: 'Failed to fetch notifications' });
     }
   },
@@ -59,7 +60,7 @@ export const notificationsController = {
         data: { count },
       });
     } catch (error) {
-      console.error('Get unread count error:', error);
+      logger.error('Get unread count error:', error);
       res.status(500).json({ success: false, error: 'Failed to fetch unread count' });
     }
   },
@@ -92,7 +93,7 @@ export const notificationsController = {
         data: updated,
       });
     } catch (error) {
-      console.error('Mark as read error:', error);
+      logger.error('Mark as read error:', error);
       res.status(500).json({ success: false, error: 'Failed to mark notification as read' });
     }
   },
@@ -115,7 +116,7 @@ export const notificationsController = {
         data: { message: 'All notifications marked as read' },
       });
     } catch (error) {
-      console.error('Mark all as read error:', error);
+      logger.error('Mark all as read error:', error);
       res.status(500).json({ success: false, error: 'Failed to mark all notifications as read' });
     }
   },
@@ -147,7 +148,7 @@ export const notificationsController = {
         data: { message: 'Notification deleted' },
       });
     } catch (error) {
-      console.error('Delete notification error:', error);
+      logger.error('Delete notification error:', error);
       res.status(500).json({ success: false, error: 'Failed to delete notification' });
     }
   },
@@ -173,7 +174,7 @@ export const notificationsController = {
 
       return notification;
     } catch (error) {
-      console.error('Create notification error:', error);
+      logger.error('Create notification error:', error);
       throw error;
     }
   },

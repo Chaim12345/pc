@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth';
+import { logger } from '../utils/logger';
 
 const prisma = new PrismaClient();
 
@@ -32,7 +33,7 @@ export const teamsController = {
 
       res.json({ success: true, data: teams });
     } catch (error) {
-      console.error('Get teams error:', error);
+      logger.error('Get teams error:', { error, userId: req.userId });
       res.status(500).json({ success: false, error: 'Failed to fetch teams' });
     }
   },
@@ -58,7 +59,7 @@ export const teamsController = {
 
       res.json({ success: true, data: team });
     } catch (error) {
-      console.error('Get team error:', error);
+      logger.error('Get team error:', { error, userId: req.userId, teamId: req.params.id });
       res.status(500).json({ success: false, error: 'Failed to fetch team' });
     }
   },
@@ -106,7 +107,7 @@ export const teamsController = {
 
       res.json({ success: true, data: team });
     } catch (error) {
-      console.error('Create team error:', error);
+      logger.error('Create team error:', { error, userId: req.userId, teamName: req.body.name });
       res.status(500).json({ success: false, error: 'Failed to create team' });
     }
   },
@@ -129,7 +130,7 @@ export const teamsController = {
 
       res.json({ success: true, data: team });
     } catch (error) {
-      console.error('Update team error:', error);
+      logger.error('Update team error:', { error, userId: req.userId, teamId: req.params.id });
       res.status(500).json({ success: false, error: 'Failed to update team' });
     }
   },
@@ -143,7 +144,7 @@ export const teamsController = {
 
       res.json({ success: true, message: 'Team deleted successfully' });
     } catch (error) {
-      console.error('Delete team error:', error);
+      logger.error('Delete team error:', { error, userId: req.userId, teamId: req.params.id });
       res.status(500).json({ success: false, error: 'Failed to delete team' });
     }
   },
@@ -169,7 +170,7 @@ export const teamsController = {
 
       res.json({ success: true, data: member });
     } catch (error) {
-      console.error('Add member error:', error);
+      logger.error('Add member error:', { error, userId: req.userId, teamId: req.params.id, memberId: req.body.userId });
       res.status(500).json({ success: false, error: 'Failed to add member' });
     }
   },
@@ -183,7 +184,7 @@ export const teamsController = {
 
       res.json({ success: true, message: 'Member removed successfully' });
     } catch (error) {
-      console.error('Remove member error:', error);
+      logger.error('Remove member error:', { error, userId: req.userId, teamId: req.params.id, memberId: req.params.memberId });
       res.status(500).json({ success: false, error: 'Failed to remove member' });
     }
   },
@@ -206,7 +207,7 @@ export const teamsController = {
 
       res.json({ success: true, data: updatedMember });
     } catch (error) {
-      console.error('Update member role error:', error);
+      logger.error('Update member role error:', { error, userId: req.userId, teamId: req.params.id, memberId: req.params.memberId });
       res.status(500).json({ success: false, error: 'Failed to update member role' });
     }
   },
@@ -232,7 +233,7 @@ export const teamsController = {
 
       res.json({ success: true, data: boardTeam });
     } catch (error) {
-      console.error('Add board error:', error);
+      logger.error('Add board error:', { error, userId: req.userId, teamId: req.params.id, boardId: req.body.boardId });
       res.status(500).json({ success: false, error: 'Failed to add board' });
     }
   },
@@ -248,7 +249,7 @@ export const teamsController = {
 
       res.json({ success: true, message: 'Board removed successfully' });
     } catch (error) {
-      console.error('Remove board error:', error);
+      logger.error('Remove board error:', { error, userId: req.userId, teamId: req.params.id, boardId: req.params.boardId });
       res.status(500).json({ success: false, error: 'Failed to remove board' });
     }
   },

@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth';
 import { SlackService } from '../services/slackService';
 import { TeamsService } from '../services/teamsService';
+import { logger } from '../utils/logger';
 
 const prisma = new PrismaClient();
 
@@ -19,7 +20,7 @@ export const integrationsController = {
 
       res.json({ success: true, data: integrations });
     } catch (error: any) {
-      console.error('Get integrations error:', error);
+      logger.error('Get integrations error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -36,7 +37,7 @@ export const integrationsController = {
 
       res.json({ success: true, data: integrations });
     } catch (error: any) {
-      console.error('Get board integrations error:', error);
+      logger.error('Get board integrations error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -66,7 +67,7 @@ export const integrationsController = {
 
       res.status(201).json({ success: true, data: integration });
     } catch (error: any) {
-      console.error('Create integration error:', error);
+      logger.error('Create integration error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -88,7 +89,7 @@ export const integrationsController = {
 
       res.json({ success: true, data: integration });
     } catch (error: any) {
-      console.error('Update integration error:', error);
+      logger.error('Update integration error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -104,7 +105,7 @@ export const integrationsController = {
 
       res.json({ success: true, message: 'Integration deleted successfully' });
     } catch (error: any) {
-      console.error('Delete integration error:', error);
+      logger.error('Delete integration error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -124,7 +125,7 @@ export const integrationsController = {
 
       res.json({ success: true, message: 'Test notification sent successfully' });
     } catch (error: any) {
-      console.error('Test Slack webhook error:', error);
+      logger.error('Test Slack webhook error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -153,7 +154,7 @@ export const integrationsController = {
 
       res.json({ success: true, message: 'Notification sent successfully' });
     } catch (error: any) {
-      console.error('Send Slack notification error:', error);
+      logger.error('Send Slack notification error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -173,7 +174,7 @@ export const integrationsController = {
 
       res.json({ success: true, message: 'Test notification sent successfully' });
     } catch (error: any) {
-      console.error('Test Teams webhook error:', error);
+      logger.error('Test Teams webhook error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -202,7 +203,7 @@ export const integrationsController = {
 
       res.json({ success: true, message: 'Notification sent successfully' });
     } catch (error: any) {
-      console.error('Send Teams notification error:', error);
+      logger.error('Send Teams notification error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   }

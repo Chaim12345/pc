@@ -181,8 +181,9 @@ export const commentController = {
               : [columnValue.value];
             
             for (const assignee of assignees) {
-              if (assignee?.id && assignee.id !== userId) {
-                assigneeUserIds.add(assignee.id);
+              const assigneeObj = assignee as any;
+              if (assigneeObj?.id && assigneeObj.id !== userId) {
+                assigneeUserIds.add(assigneeObj.id);
               }
             }
           }
@@ -248,7 +249,7 @@ export const commentController = {
         await cacheService.invalidateItem(updatedComment.itemId);
       }
     } catch (error: any) {
-      console.error('Update comment error:', error);
+      logger.error('Update comment error:', { error, userId: req.userId, commentId: req.params.id });
       res.status(500).json({ success: false, error: error.message });
     }
   },

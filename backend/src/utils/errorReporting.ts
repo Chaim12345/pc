@@ -3,7 +3,7 @@
  */
 
 import * as Sentry from '@sentry/node'
-import { ProfilingIntegration } from '@sentry/profiling-node'
+import { nodeProfilingIntegration } from '@sentry/profiling-node'
 import { logger } from './logger'
 
 interface ErrorContext {
@@ -38,7 +38,7 @@ class ErrorReportingService {
       environment,
       integrations: [
         // Enable profiling
-        new ProfilingIntegration(),
+        nodeProfilingIntegration(),
       ],
       // Performance Monitoring
       tracesSampleRate: environment === 'production' ? 0.1 : 1.0,
@@ -73,7 +73,7 @@ class ErrorReportingService {
     })
 
     this.initialized = true
-    logger.info('Sentry error reporting initialized')
+    logger.log('Sentry error reporting initialized')
   }
 
   /**
@@ -157,7 +157,8 @@ class ErrorReportingService {
       this.init()
     }
 
-    Sentry.captureMessage(message, level, {
+    Sentry.captureMessage(message, {
+      level,
       extra: context,
     })
   }

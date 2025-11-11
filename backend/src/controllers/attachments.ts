@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth';
 import * as fs from 'fs';
 import * as path from 'path';
+import { logger } from '../utils/logger';
 
 const prisma = new PrismaClient();
 
@@ -28,7 +29,7 @@ export const attachmentController = {
 
       res.json({ success: true, data: attachments });
     } catch (error: any) {
-      console.error('Get attachments error:', error);
+      logger.error('Get attachments error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -66,7 +67,7 @@ export const attachmentController = {
 
       res.status(201).json({ success: true, data: attachment });
     } catch (error: any) {
-      console.error('Upload attachment error:', error);
+      logger.error('Upload attachment error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -91,7 +92,7 @@ export const attachmentController = {
       res.setHeader('Content-Type', attachment.mimeType);
       res.sendFile(path.resolve(attachment.filepath));
     } catch (error: any) {
-      console.error('Download attachment error:', error);
+      logger.error('Download attachment error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -117,7 +118,7 @@ export const attachmentController = {
 
       res.json({ success: true, message: 'Attachment deleted' });
     } catch (error: any) {
-      console.error('Delete attachment error:', error);
+      logger.error('Delete attachment error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   }

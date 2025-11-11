@@ -4,6 +4,7 @@ import { AuthRequest } from '../middleware/auth';
 import { authenticator } from 'otplib';
 import qrcode from 'qrcode';
 import crypto from 'crypto';
+import { logger } from '../utils/logger';
 
 const prisma = new PrismaClient();
 
@@ -51,7 +52,7 @@ export const twoFactorAuthController = {
         },
       });
     } catch (error) {
-      console.error('2FA secret generation error:', error);
+      logger.error('2FA secret generation error:', error);
       res.status(500).json({ success: false, error: 'Failed to generate 2FA secret' });
     }
   },
@@ -98,7 +99,7 @@ export const twoFactorAuthController = {
             res.status(400).json({ success: false, error: 'Invalid token. Please try again.' });
         }
     } catch (error) {
-        console.error('2FA verification error:', error);
+        logger.error('2FA verification error:', error);
         res.status(500).json({ success: false, error: 'Failed to verify 2FA token' });
     }
   },
@@ -121,7 +122,7 @@ export const twoFactorAuthController = {
 
         res.json({ success: true, message: '2FA has been disabled.' });
     } catch (error) {
-        console.error('2FA disable error:', error);
+        logger.error('2FA disable error:', error);
         res.status(500).json({ success: false, error: 'Failed to disable 2FA' });
     }
   },

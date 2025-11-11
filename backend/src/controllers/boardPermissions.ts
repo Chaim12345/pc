@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth';
+import { logger } from '../utils/logger';
 
 const prisma = new PrismaClient();
 
@@ -33,7 +34,7 @@ export const boardPermissionsController = {
 
       res.json({ success: true, data: permissions });
     } catch (error: any) {
-      console.error('Get board permissions error:', error);
+      logger.error('Get board permissions error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -61,7 +62,7 @@ export const boardPermissionsController = {
 
       res.json({ success: true, data: permission });
     } catch (error: any) {
-      console.error('Create board permission error:', error);
+      logger.error('Create board permission error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -78,7 +79,7 @@ export const boardPermissionsController = {
 
       res.json({ success: true, data: permission });
     } catch (error: any) {
-      console.error('Update board permission error:', error);
+      logger.error('Update board permission error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -93,7 +94,7 @@ export const boardPermissionsController = {
 
       res.json({ success: true });
     } catch (error: any) {
-      console.error('Delete board permission error:', error);
+      logger.error('Delete board permission error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },

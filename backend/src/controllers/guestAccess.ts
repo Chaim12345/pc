@@ -2,6 +2,8 @@ import { Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth';
 import jwt from 'jsonwebtoken';
+import { env } from '../config/env';
+import { logger } from '../utils/logger';
 
 const prisma = new PrismaClient();
 
@@ -36,14 +38,14 @@ export const guestAccessController = {
         }
       });
 
-      const shareLink = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/guest/board/${guestAccess.token}`;
+      const shareLink = `${env.FRONTEND_URL}/guest/board/${guestAccess.token}`;
 
       res.status(201).json({ 
         success: true, 
         data: { ...guestAccess, shareLink }
       });
     } catch (error: any) {
-      console.error('Create guest access error:', error);
+      logger.error('Create guest access error:', { error, userId: req.userId, boardId: req.body.boardId });
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -60,7 +62,7 @@ export const guestAccessController = {
 
       res.json({ success: true, data: guestAccesses });
     } catch (error: any) {
-      console.error('Get guest accesses error:', error);
+      logger.error('Get guest accesses error:', { error, userId: req.userId, boardId: req.params.boardId });
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -123,7 +125,7 @@ export const guestAccessController = {
           accessLevel: guestAccess.accessLevel,
           type: 'guest'
         },
-        process.env.JWT_SECRET || 'secret',
+        env.JWT_SECRET,
         { expiresIn: '24h' }
       );
 
@@ -136,7 +138,7 @@ export const guestAccessController = {
         }
       });
     } catch (error: any) {
-      console.error('Get guest access by token error:', error);
+      logger.error('Get guest access by token error:', { error, token: req.params.token });
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -158,7 +160,7 @@ export const guestAccessController = {
 
       res.json({ success: true, data: guestAccess });
     } catch (error: any) {
-      console.error('Update guest access error:', error);
+      logger.error('Update guest access error:', { error, userId: req.userId, guestAccessId: req.params.id });
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -175,7 +177,7 @@ export const guestAccessController = {
 
       res.json({ success: true, message: 'Guest access revoked' });
     } catch (error: any) {
-      console.error('Revoke guest access error:', error);
+      logger.error('Revoke guest access error:', { error, userId: req.userId, guestAccessId: req.params.id });
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -191,7 +193,7 @@ export const guestAccessController = {
 
       res.json({ success: true, message: 'Guest access deleted' });
     } catch (error: any) {
-      console.error('Delete guest access error:', error);
+      logger.error('Delete guest access error:', { error, userId: req.userId, guestAccessId: req.params.id });
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -240,7 +242,7 @@ export const guestAccessController = {
         }
       });
     } catch (error: any) {
-      console.error('Get guest analytics error:', error);
+      logger.error('Get guest analytics error:', { error, userId: req.userId, boardId: req.params.boardId });
       res.status(500).json({ success: false, error: error.message });
     }
   }

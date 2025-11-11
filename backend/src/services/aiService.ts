@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { PrismaClient } from '@prisma/client';
+import { logger } from '../utils/logger';
 
 const prisma = new PrismaClient();
 
@@ -78,7 +79,7 @@ Generate 5 specific, actionable task suggestions. Return ONLY a JSON array of ta
       const suggestions = JSON.parse(content);
       return suggestions;
     } catch (error: any) {
-      console.error('AI suggestion error:', error.response?.data || error.message);
+      logger.error('AI suggestion error:', error.response?.data || error.message);
       // Fallback suggestions if AI fails
       return [
         'Review and update task priorities',
@@ -100,9 +101,17 @@ Generate 5 specific, actionable task suggestions. Return ONLY a JSON array of ta
         include: {
           board: {
             include: {
-              members: {
+              teams: {
                 include: {
-                  user: true,
+                  team: {
+                    include: {
+                      members: {
+                        include: {
+                          user: true,
+                        },
+                      },
+                    },
+                  },
                 },
               },
             },
@@ -114,29 +123,72 @@ Generate 5 specific, actionable task suggestions. Return ONLY a JSON array of ta
         return null;
       }
 
-      // Get workload for each team member
-      const members = item.board.members;
-      const workloadPromises = members.map(async (member) => {
-        const assignedItems = await prisma.item.count({
+      // Get all team members from board teams
+      const allMembers: Array<{ userId: string; userName: string }> = [];
+      for (const boardTeam of item.board.teams) {
+        for (const teamMember of boardTeam.team.members) {
+          if (!allMembers.find(m => m.userId === teamMember.userId)) {
+            allMembers.push({
+              userId: teamMember.userId,
+              userName: teamMember.user.name,
+            });
+          }
+        }
+      }
+
+      if (allMembers.length === 0) {
+        return null;
+      }
+
+      // Get workload for each team member by counting items assigned to them
+      // Assignees are stored in ColumnValue for PEOPLE columns
+      const peopleColumns = await prisma.column.findMany({
+        where: {
+          boardId: item.boardId,
+          type: { in: ['PEOPLE', 'PERSON'] },
+        },
+        select: { id: true },
+      });
+
+      const columnIds = peopleColumns.map(col => col.id);
+      
+      // Get all items on the board
+      const boardItems = await prisma.item.findMany({
+        where: { boardId: item.boardId },
+        select: { id: true },
+      });
+
+      const workloadPromises = allMembers.map(async (member) => {
+        // Count items where this user is assigned (in ColumnValue)
+        const assignedColumnValues = await prisma.columnValue.findMany({
           where: {
-            assignees: {
-              has: member.userId,
-            },
-            boardId: item.boardId,
+            columnId: { in: columnIds },
+            itemId: { in: boardItems.map(i => i.id) },
           },
         });
 
+        let assignedCount = 0;
+        for (const cv of assignedColumnValues) {
+          if (cv.value) {
+            const assignees = Array.isArray(cv.value) ? cv.value : [cv.value];
+            const assigneeIds = assignees.map((a: any) => a?.id).filter(Boolean);
+            if (assigneeIds.includes(member.userId)) {
+              assignedCount++;
+            }
+          }
+        }
+
         return {
           userId: member.userId,
-          userName: member.user.name,
-          workload: assignedItems,
+          userName: member.userName,
+          workload: assignedCount,
         };
       });
 
       const workloads = await Promise.all(workloadPromises);
 
       // Simple algorithm: assign to person with lowest workload
-      const sorted = workloads.sort((a, b) => a.workload - b.workload);
+      const sorted = workloads.sort((a: any, b: any) => a.workload - b.workload);
       
       if (sorted.length > 0) {
         const confidence = sorted.length > 1 
@@ -151,7 +203,7 @@ Generate 5 specific, actionable task suggestions. Return ONLY a JSON array of ta
 
       return null;
     } catch (error) {
-      console.error('Smart assignment error:', error);
+      logger.error('Smart assignment error:', error);
       return null;
     }
   }
@@ -161,18 +213,44 @@ Generate 5 specific, actionable task suggestions. Return ONLY a JSON array of ta
    */
   async predictDueDate(itemName: string, boardId: string): Promise<{ days: number; confidence: number }> {
     try {
-      // Fetch completed items with similar names
-      const completedItems = await prisma.item.findMany({
+      // Find STATUS column to check for completed items
+      const statusColumn = await prisma.column.findFirst({
         where: {
           boardId,
-          completedAt: { not: null },
+          type: 'STATUS',
         },
-        select: {
-          name: true,
-          createdAt: true,
-          completedAt: true,
+      });
+
+      if (!statusColumn) {
+        return { days: 7, confidence: 0.3 }; // Default 1 week
+      }
+
+      // Get all items with their status column values
+      const items = await prisma.item.findMany({
+        where: {
+          boardId,
         },
-        take: 50,
+        include: {
+          columnValues: {
+            where: {
+              columnId: statusColumn.id,
+            },
+          },
+        },
+        take: 100,
+      });
+
+      // Filter completed items (status value indicates completion)
+      const completedItems = items.filter(item => {
+        const statusValue = item.columnValues[0]?.value;
+        if (!statusValue) return false;
+        const status = statusValue as any;
+        // Check if status indicates completion (e.g., "Done", "Completed", etc.)
+        const statusLabel = status?.label || status;
+        return typeof statusLabel === 'string' && 
+               (statusLabel.toLowerCase().includes('done') || 
+                statusLabel.toLowerCase().includes('complete') ||
+                statusLabel.toLowerCase().includes('finished'));
       });
 
       if (completedItems.length === 0) {
@@ -181,8 +259,7 @@ Generate 5 specific, actionable task suggestions. Return ONLY a JSON array of ta
 
       // Calculate average completion time
       const durations = completedItems.map(item => {
-        if (!item.completedAt) return 0;
-        const diff = item.completedAt.getTime() - item.createdAt.getTime();
+        const diff = item.updatedAt.getTime() - item.createdAt.getTime();
         return Math.ceil(diff / (1000 * 60 * 60 * 24)); // Convert to days
       });
 
@@ -197,7 +274,7 @@ Generate 5 specific, actionable task suggestions. Return ONLY a JSON array of ta
         confidence,
       };
     } catch (error) {
-      console.error('Due date prediction error:', error);
+      logger.error('Due date prediction error:', error);
       return { days: 7, confidence: 0.3 };
     }
   }
@@ -243,7 +320,7 @@ Return ONLY a JSON array of category names, no other text:`;
       const categories = JSON.parse(content);
       return categories;
     } catch (error) {
-      console.error('Categorization error:', error);
+      logger.error('Categorization error:', error);
       return ['Uncategorized'];
     }
   }
@@ -287,7 +364,7 @@ Description:`;
 
       return response.data.choices[0].message.content.trim();
     } catch (error) {
-      console.error('Description generation error:', error);
+      logger.error('Description generation error:', error);
       return '';
     }
   }

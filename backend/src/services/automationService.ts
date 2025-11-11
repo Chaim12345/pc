@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { AutomationTriggerType, AutomationActionType } from '@monday-clone/shared';
+import { logger } from '../utils/logger';
 
 const prisma = new PrismaClient();
 
@@ -44,7 +45,7 @@ export async function executeAutomations(
       }
     }
   } catch (error) {
-    console.error('Error executing automations:', error);
+    logger.error('Error executing automations:', { error, boardId, triggerType });
   }
 }
 
@@ -174,7 +175,7 @@ async function executeAction(
         break;
     }
   } catch (error) {
-    console.error('Error executing action:', error);
+    logger.error('Error executing action:', { error, actionType: action.type, boardId });
   }
 }
 

@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth';
+import { logger } from '../utils/logger';
 
 const prisma = new PrismaClient();
 
@@ -43,7 +44,7 @@ export const reactionsController = {
 
       res.json({ success: true, data: reaction });
     } catch (error: any) {
-      console.error('Add reaction error:', error);
+      logger.error('Add reaction error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -71,7 +72,7 @@ export const reactionsController = {
 
       res.json({ success: true });
     } catch (error: any) {
-      console.error('Remove reaction error:', error);
+      logger.error('Remove reaction error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -111,7 +112,7 @@ export const reactionsController = {
         }
       });
     } catch (error: any) {
-      console.error('Get reactions error:', error);
+      logger.error('Get reactions error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -148,7 +149,7 @@ export const reactionsController = {
         }
       });
     } catch (error: any) {
-      console.error('Get reactions error:', error);
+      logger.error('Get reactions error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -195,7 +196,7 @@ export const reactionsController = {
         res.json({ success: true, action: 'added', data: reaction });
       }
     } catch (error: any) {
-      console.error('Toggle reaction error:', error);
+      logger.error('Toggle reaction error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },

@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { aiService } from '../services/aiService';
+import { logger } from '../utils/logger';
 
 export const aiController = {
   // Get AI task suggestions
@@ -16,7 +17,7 @@ export const aiController = {
         data: { suggestions },
       });
     } catch (error: any) {
-      console.error('AI suggestions error:', error);
+      logger.error('AI suggestions error:', error);
       res.status(500).json({
         success: false,
         error: error.message || 'Failed to generate suggestions',
@@ -37,7 +38,7 @@ export const aiController = {
         data: suggestion,
       });
     } catch (error: any) {
-      console.error('Smart assignment error:', error);
+      logger.error('Smart assignment error:', error);
       res.status(500).json({
         success: false,
         error: error.message || 'Failed to suggest assignee',
@@ -58,7 +59,7 @@ export const aiController = {
         data: prediction,
       });
     } catch (error: any) {
-      console.error('Due date prediction error:', error);
+      logger.error('Due date prediction error:', error);
       res.status(500).json({
         success: false,
         error: error.message || 'Failed to predict due date',
@@ -78,7 +79,7 @@ export const aiController = {
         data: { categories },
       });
     } catch (error: any) {
-      console.error('Categorization error:', error);
+      logger.error('Categorization error:', error);
       res.status(500).json({
         success: false,
         error: error.message || 'Failed to categorize item',
@@ -98,7 +99,7 @@ export const aiController = {
         data: { description },
       });
     } catch (error: any) {
-      console.error('Description generation error:', error);
+      logger.error('Description generation error:', error);
       res.status(500).json({
         success: false,
         error: error.message || 'Failed to generate description',
