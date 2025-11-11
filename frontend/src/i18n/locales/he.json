@@ -81,6 +81,29 @@
     "theme": "ערכת נושא",
     "darkMode": "מצב כהה",
     "lightMode": "מצב בהיר"
+  },
+  "dashboard": {
+    "myWork": "העבודה שלי",
+    "groups": "קבוצות",
+    "team": "צוות",
+    "noBoards": "אין לוחות עדיין",
+    "noBoardsDescription": "התחל על ידי יצירת הלוח הראשון שלך כדי לארגן את העבודה שלך ולשתף פעולה עם הצוות שלך"
+  },
+  "navigation": {
+    "home": "בית",
+    "dashboards": "לוחות",
+    "templates": "תבניות",
+    "settings": "הגדרות",
+    "teams": "צוותים",
+    "users": "משתמשים",
+    "workdocs": "מסמכים",
+    "myBoards": "הלוחות שלי",
+    "favorites": "מועדפים",
+    "shortcuts": "קיצורי דרך",
+    "noBoardsYet": "אין לוחות עדיין",
+    "createNewBoard": "צור לוח חדש",
+    "boardTemplates": "תבניות לוח",
+    "userManagement": "ניהול משתמשים"
   }
 }
 

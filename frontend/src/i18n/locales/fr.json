@@ -81,6 +81,29 @@
     "theme": "Thème",
     "darkMode": "Mode sombre",
     "lightMode": "Mode clair"
+  },
+  "dashboard": {
+    "myWork": "Mon Travail",
+    "groups": "groupes",
+    "team": "Équipe",
+    "noBoards": "Aucun tableau pour le moment",
+    "noBoardsDescription": "Commencez par créer votre premier tableau pour organiser votre travail et collaborer avec votre équipe"
+  },
+  "navigation": {
+    "home": "Accueil",
+    "dashboards": "Tableaux",
+    "templates": "Modèles",
+    "settings": "Paramètres",
+    "teams": "Équipes",
+    "users": "Utilisateurs",
+    "workdocs": "Documents",
+    "myBoards": "Mes Tableaux",
+    "favorites": "Favoris",
+    "shortcuts": "Raccourcis",
+    "noBoardsYet": "Aucun tableau pour le moment",
+    "createNewBoard": "Créer un nouveau tableau",
+    "boardTemplates": "Modèles de Tableau",
+    "userManagement": "Gestion des Utilisateurs"
   }
 }
 

@@ -24,6 +24,9 @@ i18n
     interpolation: {
       escapeValue: false, // React already escapes values
     },
+    react: {
+      useSuspense: false, // Disable suspense to prevent loading issues
+    },
     detection: {
       order: ['localStorage', 'navigator'],
       caches: ['localStorage'],

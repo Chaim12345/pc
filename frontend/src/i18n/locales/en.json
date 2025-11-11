@@ -114,6 +114,29 @@
     "theme": "Theme",
     "darkMode": "Dark Mode",
     "lightMode": "Light Mode"
+  },
+  "dashboard": {
+    "myWork": "My Work",
+    "groups": "groups",
+    "team": "Team",
+    "noBoards": "No boards yet",
+    "noBoardsDescription": "Get started by creating your first board to organize your work and collaborate with your team"
+  },
+  "navigation": {
+    "home": "Home",
+    "dashboards": "Dashboards",
+    "templates": "Templates",
+    "settings": "Settings",
+    "teams": "Teams",
+    "users": "Users",
+    "workdocs": "Workdocs",
+    "myBoards": "My Boards",
+    "favorites": "Favorites",
+    "shortcuts": "Shortcuts",
+    "noBoardsYet": "No boards yet",
+    "createNewBoard": "Create new board",
+    "boardTemplates": "Board Templates",
+    "userManagement": "User Management"
   }
 }
 
