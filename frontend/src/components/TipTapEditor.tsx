@@ -1,5 +1,5 @@
-import React, { useEffect, useCallback, useState } from 'react'
-import { useEditor, EditorContent, BubbleMenu } from '@tiptap/react'
+import React, { useEffect, useCallback, useState, useRef } from 'react'
+import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import Link from '@tiptap/extension-link'
@@ -51,6 +51,9 @@ export default function TipTapEditor({ content, onChange, placeholder }: Props) 
   const [showLinkModal, setShowLinkModal] = useState(false)
   const [linkUrl, setLinkUrl] = useState('')
   const [linkText, setLinkText] = useState('')
+  const [showFloatingMenu, setShowFloatingMenu] = useState(false)
+  const [floatingMenuPosition, setFloatingMenuPosition] = useState({ top: 0, left: 0 })
+  const editorRef = useRef<HTMLDivElement>(null)
 
   const editor = useEditor({
     extensions: [
@@ -168,6 +171,44 @@ export default function TipTapEditor({ content, onChange, placeholder }: Props) 
       editor.commands.setContent(content, { emitUpdate: false })
     }
   }, [content, editor])
+
+  // Handle floating menu on selection
+  useEffect(() => {
+    if (!editor) return
+
+    const handleSelectionUpdate = () => {
+      const { selection } = editor.state
+      const hasSelection = !selection.empty
+
+      if (hasSelection) {
+        const { from, to } = selection
+        const start = editor.view.coordsAtPos(from)
+        const end = editor.view.coordsAtPos(to)
+        
+        // Position menu above selection
+        const top = start.top - 10
+        const left = (start.left + end.left) / 2
+        
+        setFloatingMenuPosition({ top, left })
+        setShowFloatingMenu(true)
+      } else {
+        setShowFloatingMenu(false)
+      }
+    }
+
+    editor.on('selectionUpdate', handleSelectionUpdate)
+    editor.on('focus', handleSelectionUpdate)
+    editor.on('blur', () => {
+      // Delay hiding to allow clicking menu buttons
+      setTimeout(() => setShowFloatingMenu(false), 200)
+    })
+
+    return () => {
+      editor.off('selectionUpdate', handleSelectionUpdate)
+      editor.off('focus', handleSelectionUpdate)
+      editor.off('blur')
+    }
+  }, [editor])
 
   const handleImageUpload = useCallback(async (file: File) => {
     if (!editor) return
@@ -298,74 +339,72 @@ export default function TipTapEditor({ content, onChange, placeholder }: Props) 
   const hasSelection = editor.state.selection.empty === false
 
   return (
-    <div className="overflow-hidden bg-transparent relative">
-      {/* Floating Bubble Menu - Appears on text selection */}
-      {hasSelection && (
-        <BubbleMenu
-          editor={editor}
-          tippyOptions={{
-            duration: 200,
-            placement: 'top',
-            animation: 'scale',
+    <div className="overflow-hidden bg-transparent relative" ref={editorRef}>
+      {/* Floating Menu - Appears on text selection */}
+      {showFloatingMenu && hasSelection && (
+        <div
+          className="fixed z-50 flex items-center gap-1 bg-[var(--vibe-bg-primary)] border border-[var(--vibe-border-light)] rounded-lg shadow-xl p-1.5 backdrop-blur-sm transition-all duration-200"
+          style={{
+            top: `${floatingMenuPosition.top}px`,
+            left: `${floatingMenuPosition.left}px`,
+            transform: 'translate(-50%, -100%)',
           }}
-          className="bubble-menu"
+          onMouseDown={(e) => e.preventDefault()}
         >
-          <div className="flex items-center gap-1 bg-[var(--vibe-bg-primary)] border border-[var(--vibe-border-light)] rounded-lg shadow-xl p-1.5 backdrop-blur-sm">
-            <ToolbarButton
-              onClick={() => editor.chain().focus().toggleBold().run()}
-              isActive={editor.isActive('bold')}
-              title="Bold"
-              size="small"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z" />
-              </svg>
-            </ToolbarButton>
-            <ToolbarButton
-              onClick={() => editor.chain().focus().toggleItalic().run()}
-              isActive={editor.isActive('italic')}
-              title="Italic"
-              size="small"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <line x1="19" y1="4" x2="10" y2="4" strokeWidth={2} />
-                <line x1="14" y1="20" x2="5" y2="20" strokeWidth={2} />
-                <line x1="15" y1="4" x2="9" y2="20" strokeWidth={2} />
-              </svg>
-            </ToolbarButton>
-            <ToolbarButton
-              onClick={() => editor.chain().focus().toggleUnderline().run()}
-              isActive={editor.isActive('underline')}
-              title="Underline"
-              size="small"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 19h14M5 5h14" />
-              </svg>
-            </ToolbarButton>
-            <ToolbarButton
-              onClick={() => editor.chain().focus().toggleHighlight().run()}
-              isActive={editor.isActive('highlight')}
-              title="Highlight"
-              size="small"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-              </svg>
-            </ToolbarButton>
-            <div className="w-px h-6 bg-[var(--vibe-border-light)] mx-1" />
-            <ToolbarButton
-              onClick={handleAddLink}
-              isActive={editor.isActive('link')}
-              title="Add Link"
-              size="small"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-              </svg>
-            </ToolbarButton>
-          </div>
-        </BubbleMenu>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleBold().run()}
+            isActive={editor.isActive('bold')}
+            title="Bold"
+            size="small"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z" />
+            </svg>
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleItalic().run()}
+            isActive={editor.isActive('italic')}
+            title="Italic"
+            size="small"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <line x1="19" y1="4" x2="10" y2="4" strokeWidth={2} />
+              <line x1="14" y1="20" x2="5" y2="20" strokeWidth={2} />
+              <line x1="15" y1="4" x2="9" y2="20" strokeWidth={2} />
+            </svg>
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleUnderline().run()}
+            isActive={editor.isActive('underline')}
+            title="Underline"
+            size="small"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 19h14M5 5h14" />
+            </svg>
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleHighlight().run()}
+            isActive={editor.isActive('highlight')}
+            title="Highlight"
+            size="small"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+            </svg>
+          </ToolbarButton>
+          <div className="w-px h-6 bg-[var(--vibe-border-light)] mx-1" />
+          <ToolbarButton
+            onClick={handleAddLink}
+            isActive={editor.isActive('link')}
+            title="Add Link"
+            size="small"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+            </svg>
+          </ToolbarButton>
+        </div>
       )}
 
       {/* Main Toolbar - Improved organization */}
