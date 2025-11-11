@@ -32,6 +32,7 @@ model User {
   invitedAt               DateTime?
   emailVerified           Boolean              @default(false)
   emailVerifiedAt         DateTime?
+  emailVerificationToken  String?
   activityLogs            ActivityLog[]
   attachments             Attachment[]
   createdBoards           Board[]              @relation("BoardCreator")
@@ -41,6 +42,7 @@ model User {
   teamMemberships         TeamMember[]
   timeEntries             TimeEntry[]
   createdWorkdocs         Workdoc[]            @relation("WorkdocCreator")
+  passwordResetTokens     PasswordResetToken[]
 
   @@map("users")
 }
@@ -610,4 +612,19 @@ model DocumentVersion {
 
   @@index([documentId])
   @@map("document_versions")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@index([expiresAt])
+  @@map("password_reset_tokens")
 }
