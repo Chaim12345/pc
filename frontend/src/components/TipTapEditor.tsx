@@ -179,9 +179,9 @@ export default function TipTapEditor({ content, onChange, placeholder }: Props) 
 
   // Handle floating menu on selection
   useEffect(() => {
-    if (!editor) return
+    if (!editor || !editorRef.current) return
 
-    const handleSelectionUpdate = () => {
+    const updateMenuPosition = () => {
       const { selection } = editor.state
       const hasSelection = !selection.empty
 
@@ -191,11 +191,19 @@ export default function TipTapEditor({ content, onChange, placeholder }: Props) 
           const start = editor.view.coordsAtPos(from)
           const end = editor.view.coordsAtPos(to)
           
-          // Position menu above selection
-          const top = start.top - 10
-          const left = (start.left + end.left) / 2
+          // Get editor container position
+          const editorRect = editorRef.current!.getBoundingClientRect()
           
-          setFloatingMenuPosition({ top, left })
+          // Calculate position relative to editor container
+          const top = start.top - editorRect.top - 10
+          const left = ((start.left + end.left) / 2) - editorRect.left
+          
+          // Ensure menu stays within editor bounds
+          const menuWidth = 300 // Approximate menu width
+          const boundedLeft = Math.max(10, Math.min(left, editorRect.width - menuWidth - 10))
+          const boundedTop = Math.max(10, top)
+          
+          setFloatingMenuPosition({ top: boundedTop, left: boundedLeft })
           setShowFloatingMenu(true)
         } catch (e) {
           // Ignore coordinate errors
@@ -206,21 +214,39 @@ export default function TipTapEditor({ content, onChange, placeholder }: Props) 
       }
     }
 
+    const handleSelectionUpdate = () => {
+      updateMenuPosition()
+    }
+
     const handleBlur = () => {
       // Delay hiding to allow clicking menu buttons
       setTimeout(() => setShowFloatingMenu(false), 200)
     }
 
+    // Update position on scroll
+    const handleScroll = () => {
+      if (showFloatingMenu) {
+        updateMenuPosition()
+      }
+    }
+
     editor.on('selectionUpdate', handleSelectionUpdate)
     editor.on('focus', handleSelectionUpdate)
     editor.on('blur', handleBlur)
+    
+    // Listen to scroll events on editor container and window
+    const editorContainer = editorRef.current
+    window.addEventListener('scroll', handleScroll, true)
+    editorContainer.addEventListener('scroll', handleScroll, true)
 
     return () => {
       editor.off('selectionUpdate', handleSelectionUpdate)
       editor.off('focus', handleSelectionUpdate)
       editor.off('blur', handleBlur)
+      window.removeEventListener('scroll', handleScroll, true)
+      editorContainer.removeEventListener('scroll', handleScroll, true)
     }
-  }, [editor])
+  }, [editor, showFloatingMenu])
 
   const handleImageUpload = useCallback(async (file: File) => {
     if (!editor) return
@@ -355,7 +381,7 @@ export default function TipTapEditor({ content, onChange, placeholder }: Props) 
       {/* Floating Menu - Appears on text selection */}
       {showFloatingMenu && hasSelection && (
         <div
-          className="fixed z-50 flex items-center gap-1 bg-[var(--vibe-bg-primary)] border border-[var(--vibe-border-light)] rounded-lg shadow-xl p-1.5 backdrop-blur-sm transition-all duration-200"
+          className="absolute z-50 flex items-center gap-1 bg-[var(--vibe-bg-primary)] border border-[var(--vibe-border-light)] rounded-lg shadow-xl p-1.5 backdrop-blur-sm transition-all duration-200"
           style={{
             top: `${floatingMenuPosition.top}px`,
             left: `${floatingMenuPosition.left}px`,
