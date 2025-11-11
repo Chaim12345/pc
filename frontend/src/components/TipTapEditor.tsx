@@ -305,10 +305,34 @@ export default function TipTapEditor({ content, onChange, placeholder }: Props) 
   const handleSaveLink = () => {
     if (!editor || !linkUrl.trim()) return
 
-    if (linkText.trim()) {
-      editor.chain().focus().insertContent(`<a href="${linkUrl}">${linkText}</a>`).run()
+    // Ensure URL has protocol
+    let finalUrl = linkUrl.trim()
+    if (!finalUrl.match(/^https?:\/\//i)) {
+      finalUrl = 'https://' + finalUrl
+    }
+
+    if (editor.isActive('link')) {
+      // Update existing link
+      if (linkText.trim()) {
+        editor.chain().focus().extendMarkRange('link').setLink({ href: finalUrl }).insertContent(linkText.trim()).run()
+      } else {
+        editor.chain().focus().extendMarkRange('link').setLink({ href: finalUrl }).run()
+      }
     } else {
-      editor.chain().focus().setLink({ href: linkUrl }).run()
+      // Insert new link
+      if (linkText.trim()) {
+        editor.chain().focus().insertContent(`<a href="${finalUrl}">${linkText.trim()}</a>`).run()
+      } else {
+        const { from, to } = editor.state.selection
+        const selectedText = editor.state.doc.textBetween(from, to)
+        if (selectedText) {
+          // Apply link to selected text
+          editor.chain().focus().setLink({ href: finalUrl }).run()
+        } else {
+          // Insert link with URL as text
+          editor.chain().focus().insertContent(`<a href="${finalUrl}">${finalUrl}</a>`).run()
+        }
+      }
     }
     
     setShowLinkModal(false)
