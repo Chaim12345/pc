@@ -146,9 +146,10 @@ export default function TipTapEditor({ content, onChange, placeholder }: Props) 
         class: 'prose prose-lg max-w-none focus:outline-none min-h-[500px] text-[var(--vibe-primary-text)] prose-headings:font-bold prose-h1:text-4xl prose-h1:mt-8 prose-h1:mb-4 prose-h2:text-3xl prose-h2:mt-6 prose-h2:mb-3 prose-h3:text-2xl prose-h3:mt-4 prose-h3:mb-2 prose-p:text-base prose-p:leading-relaxed prose-p:my-3 prose-li:my-2 prose-table:w-full prose-th:border prose-td:border prose-th:p-2 prose-td:p-2 prose-blockquote:border-l-4 prose-blockquote:border-[var(--vibe-primary)] prose-blockquote:pl-4 prose-blockquote:italic prose-code:bg-[var(--vibe-bg-hover)] prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-pre:bg-[var(--vibe-bg-secondary)] prose-pre:rounded-lg prose-pre:p-4 prose-pre:overflow-x-auto'
       },
       handleDrop: (view, event, _slice, moved) => {
-        if (!moved && event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0]) {
+        if (!moved && event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files.length > 0) {
+          event.preventDefault()
           const file = event.dataTransfer.files[0]
-          if (file.type.startsWith('image/')) {
+          if (file && file.type.startsWith('image/')) {
             handleImageUpload(file)
             return true
           }
@@ -156,15 +157,27 @@ export default function TipTapEditor({ content, onChange, placeholder }: Props) 
         return false
       },
       handlePaste: (view, event, _slice) => {
-        const items = Array.from(event.clipboardData?.items || [])
+        if (!event.clipboardData) return false
+        
+        const items = Array.from(event.clipboardData.items || [])
         const imageItem = items.find(item => item.type.startsWith('image/'))
+        
         if (imageItem) {
+          event.preventDefault()
           const file = imageItem.getAsFile()
           if (file) {
             handleImageUpload(file)
             return true
           }
         }
+        
+        // Also check for image URLs in clipboard text
+        const text = event.clipboardData.getData('text/plain')
+        if (text && (text.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i) || text.startsWith('http'))) {
+          // Allow normal paste for URLs, user can convert to image manually
+          return false
+        }
+        
         return false
       },
     }
@@ -251,6 +264,12 @@ export default function TipTapEditor({ content, onChange, placeholder }: Props) 
   const handleImageUpload = useCallback(async (file: File) => {
     if (!editor) return
 
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      showToast('Please upload an image file', 'error')
+      return
+    }
+
     // Validate file size (max 10MB)
     if (file.size > 10 * 1024 * 1024) {
       showToast('Image size must be less than 10MB', 'error')
@@ -258,6 +277,12 @@ export default function TipTapEditor({ content, onChange, placeholder }: Props) 
     }
 
     setIsUploadingImage(true)
+    
+    // Show temporary placeholder while uploading
+    const placeholderId = `placeholder-${Date.now()}`
+    const placeholderUrl = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtc2l6ZT0iMTgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIiBmaWxsPSIjOTk5Ij5VcGxvYWRpbmcuLi48L3RleHQ+PC9zdmc+'
+    editor.chain().focus().setImage({ src: placeholderUrl }).run()
+
     try {
       const formData = new FormData()
       formData.append('file', file)
@@ -270,15 +295,28 @@ export default function TipTapEditor({ content, onChange, placeholder }: Props) 
 
       const imageUrl = response.data.data?.url || response.data.data?.fileUrl
       if (imageUrl) {
-        editor.chain().focus().setImage({ src: imageUrl }).run()
+        // Replace placeholder with actual image
+        const { tr } = editor.state
+        const { from, to } = editor.state.selection
+        editor.view.dispatch(tr.replaceWith(from - 1, to, editor.schema.nodes.image.create({ src: imageUrl })))
         showToast('Image uploaded successfully', 'success')
+      } else {
+        throw new Error('No image URL returned from server')
       }
     } catch (error: any) {
       console.error('Failed to upload image:', error)
       showToast(error.response?.data?.error || 'Failed to upload image', 'error')
-      // Fallback: create object URL for preview
-      const objectUrl = URL.createObjectURL(file)
-      editor.chain().focus().setImage({ src: objectUrl }).run()
+      
+      // Remove placeholder on error
+      try {
+        editor.chain().focus().deleteSelection().run()
+      } catch (e) {
+        // Ignore deletion errors
+      }
+      
+      // Optionally: create object URL for preview (commented out to avoid memory leaks)
+      // const objectUrl = URL.createObjectURL(file)
+      // editor.chain().focus().setImage({ src: objectUrl }).run()
     } finally {
       setIsUploadingImage(false)
     }
