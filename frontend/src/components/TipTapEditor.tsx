@@ -228,6 +228,7 @@ export default function TipTapEditor({ content, onChange, placeholder }: Props) 
     }
 
     const handleSelectionUpdate = () => {
+      console.log('selectionUpdate fired', editor.state.selection) // Debug log
       updateMenuPosition()
     }
 
@@ -325,6 +326,8 @@ export default function TipTapEditor({ content, onChange, placeholder }: Props) 
   const handleAddLink = () => {
     if (!editor) return
     
+    console.log('handleAddLink called') // Debug log
+    
     const { from, to } = editor.state.selection
     const selectedText = editor.state.doc.textBetween(from, to)
     
@@ -337,6 +340,7 @@ export default function TipTapEditor({ content, onChange, placeholder }: Props) 
       setLinkText(selectedText || '')
     }
     
+    console.log('Setting showLinkModal to true') // Debug log
     setShowLinkModal(true)
   }
 
@@ -399,8 +403,10 @@ export default function TipTapEditor({ content, onChange, placeholder }: Props) 
 
   const addTable = () => {
     if (!editor) return
+    console.log('addTable called') // Debug log
     try {
       editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
+      console.log('Table inserted successfully') // Debug log
     } catch (error) {
       console.error('Failed to insert table:', error)
       showToast('Failed to insert table', 'error')
@@ -545,7 +551,11 @@ export default function TipTapEditor({ content, onChange, placeholder }: Props) 
           </ToolbarButton>
           <div className="w-px h-6 bg-[var(--vibe-border-light)] mx-1" />
           <ToolbarButton
-            onClick={handleAddLink}
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              handleAddLink()
+            }}
             isActive={editor.isActive('link')}
             title="Add Link"
             size="small"
@@ -714,7 +724,11 @@ export default function TipTapEditor({ content, onChange, placeholder }: Props) 
         {/* Insert Group */}
         <ToolbarGroup label="Insert">
           <ToolbarButton
-            onClick={handleAddLink}
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              handleAddLink()
+            }}
             isActive={editor.isActive('link')}
             title="Add Link"
           >
@@ -737,7 +751,11 @@ export default function TipTapEditor({ content, onChange, placeholder }: Props) 
           </ToolbarButton>
           {!isTableActive && (
             <ToolbarButton
-              onClick={addTable}
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                addTable()
+              }}
               title="Insert Table"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
