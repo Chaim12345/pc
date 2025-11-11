@@ -62,6 +62,11 @@ export default function TipTapEditor({ content, onChange, placeholder }: Props) 
           levels: [1, 2, 3]
         },
         strike: false,
+        // Disable extensions that we're adding separately to avoid duplicates
+        link: false,
+        underline: false,
+        dropcursor: false,
+        gapcursor: false,
       }),
       Placeholder.configure({
         placeholder: placeholder || 'Start writing...',
