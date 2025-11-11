@@ -124,8 +124,6 @@ export default function ItemDetailModal({ itemId, boardId, isOpen, onClose }: It
     },
   })
 
-  if (!isOpen) return null
-  
   // Memoize formatted dates - must be before early returns
   const formattedDates = useMemo(() => {
     if (!item) return { createdAt: '', updatedAt: '' }
