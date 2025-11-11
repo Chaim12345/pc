@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth';
 import { boardTemplates } from '../data/boardTemplates';
+import { logger } from '../utils/logger';
 
 const prisma = new PrismaClient();
 
@@ -11,7 +12,7 @@ export const templatesController = {
       // Return all available templates
       res.json({ success: true, data: boardTemplates });
     } catch (error: any) {
-      console.error('Get templates error:', error);
+      logger.error('Get templates error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -26,7 +27,7 @@ export const templatesController = {
 
       res.json({ success: true, data: filtered });
     } catch (error: any) {
-      console.error('Get templates by category error:', error);
+      logger.error('Get templates by category error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -43,7 +44,7 @@ export const templatesController = {
 
       res.json({ success: true, data: template });
     } catch (error: any) {
-      console.error('Get template by ID error:', error);
+      logger.error('Get template by ID error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -52,7 +53,13 @@ export const templatesController = {
     try {
       const { templateId } = req.params;
       const { name, organizationId } = req.body;
-      const userId = req.user!.id;
+      
+      // Check if user is authenticated
+      if (!req.user) {
+        return res.status(401).json({ success: false, error: 'Unauthorized: User not authenticated' });
+      }
+      
+      const userId = req.user.id;
 
       if (!name || !organizationId) {
         return res.status(400).json({ success: false, error: 'Name and organizationId are required' });
@@ -101,6 +108,41 @@ export const templatesController = {
         createdColumns.push(column);
       }
 
+      // Create items from template demo data
+      for (const [groupIndex, groupTemplate] of template.groups.entries()) {
+        const group = createdGroups[groupIndex];
+        if (group && groupTemplate.items && groupTemplate.items.length > 0) {
+          for (const [itemIndex, itemTemplate] of groupTemplate.items.entries()) {
+            // Create column values for this item
+            const columnValues = [];
+            if (itemTemplate.columnValues) {
+              for (const cv of itemTemplate.columnValues) {
+                const column = createdColumns[cv.columnIndex];
+                if (column) {
+                  columnValues.push({
+                    columnId: column.id,
+                    value: cv.value,
+                  });
+                }
+              }
+            }
+
+            // Create the item
+            await prisma.item.create({
+              data: {
+                boardId: board.id,
+                groupId: group.id,
+                name: itemTemplate.name,
+                position: itemIndex,
+                columnValues: columnValues.length > 0 ? {
+                  create: columnValues,
+                } : undefined,
+              },
+            });
+          }
+        }
+      }
+
       // Fetch the complete board with relationships
       const completedBoard = await prisma.board.findUnique({
         where: { id: board.id },
@@ -119,9 +161,8 @@ export const templatesController = {
 
       res.json({ success: true, data: completedBoard });
     } catch (error: any) {
-      console.error('Create board from template error:', error);
+      logger.error('Create board from template error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
 };
-
