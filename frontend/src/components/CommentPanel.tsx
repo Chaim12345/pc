@@ -19,7 +19,7 @@ interface CommentPanelProps {
 
 export default function CommentPanel({ itemId, boardId, isOpen, onClose, embedded = false }: CommentPanelProps) {
   const { user } = useAuth()
-  const { socket } = useSocket()
+  const { socket, isConnected } = useSocket()
   const queryClient = useQueryClient()
   const [newComment, setNewComment] = useState('')
   const [replyingTo, setReplyingTo] = useState<string | null>(null)
@@ -66,7 +66,7 @@ export default function CommentPanel({ itemId, boardId, isOpen, onClose, embedde
       queryClient.invalidateQueries({ queryKey: ['comments', itemId] })
       queryClient.invalidateQueries({ queryKey: ['board', boardId] })
       setNewComment('')
-      if (socket) {
+      if (socket && isConnected) {
         socket.emit(SocketEvent.COMMENT_ADDED, { boardId, itemId })
       }
     },

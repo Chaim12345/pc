@@ -35,7 +35,7 @@ export default function NotificationCenter() {
   const [allNotifications, setAllNotifications] = useState<Notification[]>([])
   const dropdownRef = useRef<HTMLDivElement>(null)
   const parentRef = useRef<HTMLDivElement>(null)
-  const { socket } = useSocket()
+  const { socket, isConnected } = useSocket()
   const { showToast } = useToast()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
@@ -111,7 +111,7 @@ export default function NotificationCenter() {
 
   // Listen for real-time notifications
   useEffect(() => {
-    if (socket) {
+    if (socket && isConnected) {
       const handleNotificationNew = (data: { notification?: Notification }) => {
         logger.log('Received NOTIFICATION_NEW event:', data)
         
@@ -143,7 +143,7 @@ export default function NotificationCenter() {
         logger.log('Stopped listening for NOTIFICATION_NEW events')
       }
     }
-  }, [socket, queryClient, showToast])
+  }, [socket, isConnected, queryClient, showToast])
 
   // Close dropdown when clicking outside
   useEffect(() => {

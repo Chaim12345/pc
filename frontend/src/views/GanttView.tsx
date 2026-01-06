@@ -18,7 +18,7 @@ interface GanttItem {
 }
 
 export default function GanttView({ board }: GanttViewProps) {
-  const { socket } = useSocket()
+  const { socket, isConnected } = useSocket()
   const queryClient = useQueryClient()
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [zoom, setZoom] = useState<'week' | 'month' | 'quarter'>('month')
@@ -35,9 +35,7 @@ export default function GanttView({ board }: GanttViewProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['board', board.id] })
-      if (socket) {
-        socket.emit(SocketEvent.COLUMN_UPDATED, { boardId: board.id })
-      }
+      socket && isConnected && socket.emit(SocketEvent.COLUMN_UPDATED, { boardId: board.id })
     },
   })
 

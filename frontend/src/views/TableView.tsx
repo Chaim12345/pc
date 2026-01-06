@@ -24,7 +24,7 @@ interface TableViewProps {
 }
 
 export default function TableView({ board, sortRules = [], onSortChange }: TableViewProps) {
-  const { socket } = useSocket()
+  const { socket, isConnected } = useSocket()
   const queryClient = useQueryClient()
   const { showToast } = useToast()
   const [editingCell, setEditingCell] = useState<{ itemId: string; columnId: string } | null>(null)
@@ -122,7 +122,7 @@ export default function TableView({ board, sortRules = [], onSortChange }: Table
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['board', board.id] })
-      if (socket) {
+      if (socket && isConnected) {
         socket.emit(SocketEvent.ITEM_UPDATED, { boardId: board.id })
       }
     },
@@ -135,7 +135,7 @@ export default function TableView({ board, sortRules = [], onSortChange }: Table
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['board', board.id] })
-      if (socket) {
+      if (socket && isConnected) {
         socket.emit(SocketEvent.COLUMN_UPDATED, { boardId: board.id })
       }
     },
@@ -178,7 +178,7 @@ export default function TableView({ board, sortRules = [], onSortChange }: Table
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['board', board.id] })
-      socket?.emit(SocketEvent.BOARD_UPDATED, { boardId: board.id })
+      socket && isConnected && socket.emit(SocketEvent.BOARD_UPDATED, { boardId: board.id })
       showToast('Group renamed successfully', 'success')
       setRenameGroupId(null)
       setRenameGroupName('')
@@ -195,7 +195,7 @@ export default function TableView({ board, sortRules = [], onSortChange }: Table
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['board', board.id] })
-      socket?.emit(SocketEvent.BOARD_UPDATED, { boardId: board.id })
+      socket && isConnected && socket.emit(SocketEvent.BOARD_UPDATED, { boardId: board.id })
       showToast('Group deleted successfully', 'success')
       setDeleteGroupId(null)
     },
@@ -212,7 +212,7 @@ export default function TableView({ board, sortRules = [], onSortChange }: Table
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['board', board.id] })
-      socket?.emit(SocketEvent.COLUMN_UPDATED, { boardId: board.id })
+      socket && isConnected && socket.emit(SocketEvent.COLUMN_UPDATED, { boardId: board.id })
       showToast('Column updated successfully', 'success')
       setEditColumnId(null)
       setEditColumnTitle('')
@@ -229,7 +229,7 @@ export default function TableView({ board, sortRules = [], onSortChange }: Table
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['board', board.id] })
-      socket?.emit(SocketEvent.COLUMN_UPDATED, { boardId: board.id })
+      socket && isConnected && socket.emit(SocketEvent.COLUMN_UPDATED, { boardId: board.id })
       showToast('Column deleted successfully', 'success')
       setDeleteColumnId(null)
     },
