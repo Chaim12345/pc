@@ -374,7 +374,7 @@ const KanbanColumn = memo(function KanbanColumn({ label, column, items, boardId,
 KanbanColumn.displayName = 'KanbanColumn'
 
 export default function KanbanView({ board: boardProp, filterRules = [], sortRules = [] }: KanbanViewProps) {
-  const { socket } = useSocket()
+  const { socket, isConnected } = useSocket()
   const { showToast } = useToast()
   const queryClient = useQueryClient()
   const [activeItem, setActiveItem] = useState<Item | null>(null)
@@ -420,9 +420,7 @@ export default function KanbanView({ board: boardProp, filterRules = [], sortRul
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['board', board.id] })
       showToast('Item added successfully', 'success')
-      if (socket) {
-        socket.emit(SocketEvent.ITEM_CREATED, { boardId: board.id })
-      }
+      socket && isConnected && socket.emit(SocketEvent.ITEM_CREATED, { boardId: board.id })
     },
     onError: (error) => {
       showToast('Failed to add item', 'error')
@@ -438,9 +436,7 @@ export default function KanbanView({ board: boardProp, filterRules = [], sortRul
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['board', board.id] })
       showToast('Item updated successfully', 'success')
-      if (socket) {
-        socket.emit(SocketEvent.ITEM_UPDATED, { boardId: board.id })
-      }
+      socket && isConnected && socket.emit(SocketEvent.ITEM_UPDATED, { boardId: board.id })
     },
   })
 
@@ -452,9 +448,7 @@ export default function KanbanView({ board: boardProp, filterRules = [], sortRul
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['board', board.id] })
       showToast('Item deleted successfully', 'success')
-      if (socket) {
-        socket.emit(SocketEvent.ITEM_DELETED, { boardId: board.id })
-      }
+      socket && isConnected && socket.emit(SocketEvent.ITEM_DELETED, { boardId: board.id })
     },
   })
 
@@ -478,9 +472,7 @@ export default function KanbanView({ board: boardProp, filterRules = [], sortRul
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['board', board.id] })
       showToast('Item duplicated successfully', 'success')
-      if (socket) {
-        socket.emit(SocketEvent.ITEM_CREATED, { boardId: board.id })
-      }
+      socket && isConnected && socket.emit(SocketEvent.ITEM_CREATED, { boardId: board.id })
     },
   })
 
@@ -555,9 +547,7 @@ export default function KanbanView({ board: boardProp, filterRules = [], sortRul
       queryClient.invalidateQueries({ 
         queryKey: ['board', board.id]
       })
-      if (socket) {
-        socket.emit(SocketEvent.COLUMN_UPDATED, { boardId: board.id })
-      }
+      socket && isConnected && socket.emit(SocketEvent.COLUMN_UPDATED, { boardId: board.id })
     },
   })
 

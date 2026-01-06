@@ -28,7 +28,7 @@ interface TimelineItem {
 }
 
 export default function TimelineView({ board }: TimelineViewProps) {
-  const { socket } = useSocket()
+  const { socket, isConnected } = useSocket()
   const queryClient = useQueryClient()
   const [currentDate, setCurrentDate] = useState(new Date())
   const [zoom, setZoom] = useState<'day' | 'week' | 'month'>('month')
@@ -45,9 +45,7 @@ export default function TimelineView({ board }: TimelineViewProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['board', board.id] })
-      if (socket) {
-        socket.emit(SocketEvent.COLUMN_UPDATED, { boardId: board.id })
-      }
+      socket && isConnected && socket.emit(SocketEvent.COLUMN_UPDATED, { boardId: board.id })
     },
   })
 
