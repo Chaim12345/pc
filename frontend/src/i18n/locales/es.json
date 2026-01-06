@@ -81,6 +81,29 @@
     "theme": "Tema",
     "darkMode": "Modo Oscuro",
     "lightMode": "Modo Claro"
+  },
+  "dashboard": {
+    "myWork": "Mi Trabajo",
+    "groups": "grupos",
+    "team": "Equipo",
+    "noBoards": "Aún no hay tableros",
+    "noBoardsDescription": "Comienza creando tu primer tablero para organizar tu trabajo y colaborar con tu equipo"
+  },
+  "navigation": {
+    "home": "Inicio",
+    "dashboards": "Tableros",
+    "templates": "Plantillas",
+    "settings": "Configuración",
+    "teams": "Equipos",
+    "users": "Usuarios",
+    "workdocs": "Documentos",
+    "myBoards": "Mis Tableros",
+    "favorites": "Favoritos",
+    "shortcuts": "Atajos",
+    "noBoardsYet": "Aún no hay tableros",
+    "createNewBoard": "Crear nuevo tablero",
+    "boardTemplates": "Plantillas de Tablero",
+    "userManagement": "Gestión de Usuarios"
   }
 }
 

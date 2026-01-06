@@ -6,6 +6,7 @@ import { createObjectCsvWriter } from 'csv-writer';
 import PDFDocument from 'pdfkit';
 import fs from 'fs';
 import path from 'path';
+import { logger } from '../utils/logger';
 
 const prisma = new PrismaClient();
 
@@ -91,7 +92,7 @@ export const importExportController = {
       await workbook.xlsx.write(res);
       res.end();
     } catch (error: any) {
-      console.error('Export to Excel error:', error);
+      logger.error('Export to Excel error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -162,7 +163,7 @@ export const importExportController = {
 
       res.send(csvContent);
     } catch (error: any) {
-      console.error('Export to CSV error:', error);
+      logger.error('Export to CSV error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -245,7 +246,7 @@ export const importExportController = {
 
       doc.end();
     } catch (error: any) {
-      console.error('Export to PDF error:', error);
+      logger.error('Export to PDF error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -303,7 +304,7 @@ export const importExportController = {
       await workbook.xlsx.write(res);
       res.end();
     } catch (error: any) {
-      console.error('Download template error:', error);
+      logger.error('Download template error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -441,7 +442,7 @@ export const importExportController = {
         }
       });
     } catch (error: any) {
-      console.error('Import data error:', error);
+      logger.error('Import data error:', error);
       
       // Clean up file on error
       if (req.file?.path) {

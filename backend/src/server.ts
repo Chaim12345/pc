@@ -14,8 +14,18 @@ import { apiLimiter, sanitizeInput } from './middleware/security';
 import { errorHandler, errorLogger, notFoundHandler } from './middleware/errorHandler';
 import { cacheService } from './services/cacheService';
 import { errorReportingService } from './utils/errorReporting';
+import { validateEnv, env } from './config/env';
 
 dotenv.config();
+
+// Validate environment variables at startup
+try {
+  validateEnv();
+  console.log('✅ Environment variables validated successfully');
+} catch (error) {
+  console.error('❌ Failed to validate environment variables');
+  process.exit(1);
+}
 
 // Initialize error reporting (must be done before any other imports that might throw)
 errorReportingService.init();
@@ -24,15 +34,15 @@ const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: env.FRONTEND_URL,
     credentials: true
   }
 });
 
-const PORT = process.env.PORT || 3001;
+const PORT = parseInt(env.PORT, 10);
 
 // Security middleware
-const isProduction = process.env.NODE_ENV === 'production';
+const isProduction = env.NODE_ENV === 'production';
 app.use(helmet({
   contentSecurityPolicy: isProduction ? {
     directives: {
@@ -41,7 +51,7 @@ app.use(helmet({
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       scriptSrc: ["'self'"],
       imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'", process.env.FRONTEND_URL || 'http://localhost:5173'],
+      connectSrc: ["'self'", env.FRONTEND_URL],
       frameSrc: ["'none'"],
       objectSrc: ["'none'"],
       upgradeInsecureRequests: isProduction ? [] : null,
@@ -53,7 +63,7 @@ app.use(helmet({
 
 // CORS middleware
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: env.FRONTEND_URL,
   credentials: true
 }));
 
@@ -74,7 +84,7 @@ app.use('/api', apiLimiter);
 setupSocket(io);
 
 // Setup Swagger documentation (only in development)
-if (process.env.NODE_ENV !== 'production') {
+if (env.NODE_ENV !== 'production') {
   setupSwagger(app);
 }
 
@@ -97,8 +107,8 @@ app.use(errorHandler);
 
 httpServer.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
-  console.log(`   Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`   CORS origin: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
+  console.log(`   Environment: ${env.NODE_ENV}`);
+  console.log(`   CORS origin: ${env.FRONTEND_URL}`);
   console.log(`   Redis cache: ${cacheService.isConnected() ? '✅ Connected' : '⚠️  Disconnected (caching disabled)'}`);
   
   // Start recurring tasks cron job (runs every hour at minute 0)

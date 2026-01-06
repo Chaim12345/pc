@@ -1,15 +1,15 @@
-import React, { useState, useEffect, useRef } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useToast } from '../contexts/ToastContext'
-import { api } from '../services/api'
-import TipTapEditor from '../components/TipTapEditor'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useEffect, useRef, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
+import CollaborativePresence from '../components/CollaborativePresence'
+import ConfirmationDialog from '../components/ConfirmationDialog'
+import LexicalEditor from '../components/LexicalEditor'
+import ShareWorkdocModal from '../components/ShareWorkdocModal'
 import VibeButton from '../components/VibeButton'
 import { useSocket } from '../contexts/SocketContext'
 import { useTheme } from '../contexts/ThemeContext'
-import CollaborativePresence from '../components/CollaborativePresence'
-import ShareWorkdocModal from '../components/ShareWorkdocModal'
-import ConfirmationDialog from '../components/ConfirmationDialog'
+import { useToast } from '../contexts/ToastContext'
+import { api } from '../services/api'
 
 interface Workdoc {
   id: string
@@ -32,7 +32,7 @@ export default function WorkdocEditor() {
   const navigate = useNavigate()
   const { showToast } = useToast()
   const queryClient = useQueryClient()
-  const socket = useSocket()
+  const { socket: socketInstance } = useSocket()
   const { theme, toggleTheme } = useTheme()
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
@@ -69,37 +69,37 @@ export default function WorkdocEditor() {
 
   // Socket connection for collaborative features
   useEffect(() => {
-    // Check if socket exists and has emit method
-    if (!socket || typeof socket.emit !== 'function' || !workdocId) return
+    // Check if socketInstance exists and has emit method
+    if (!socketInstance || typeof socketInstance.emit !== 'function' || !workdocId) return
 
     // Join workdoc room
-    socket.emit('join-workdoc', { workdocId })
+    socketInstance.emit('join-workdoc', { workdocId })
 
     // Listen for collaborator updates
-    socket.on('collaborator-joined', (user: any) => {
+    socketInstance.on('collaborator-joined', (user: any) => {
       setCollaborators(prev => [...prev.filter(c => c.id !== user.id), user])
     })
 
-    socket.on('collaborator-left', (userId: string) => {
+    socketInstance.on('collaborator-left', (userId: string) => {
       setCollaborators(prev => prev.filter(c => c.id !== userId))
     })
 
-    socket.on('workdoc-updated', (data: any) => {
-      if (data.userId !== socket.id) {
+    socketInstance.on('workdoc-updated', (data: any) => {
+      if (data.userId !== socketInstance.id) {
         // Update from another user
         queryClient.invalidateQueries({ queryKey: ['workdoc', workdocId] })
       }
     })
 
     return () => {
-      if (socket && typeof socket.emit === 'function') {
-        socket.emit('leave-workdoc', { workdocId })
-        socket.off('collaborator-joined')
-        socket.off('collaborator-left')
-        socket.off('workdoc-updated')
+      if (socketInstance && typeof socketInstance.emit === 'function') {
+        socketInstance.emit('leave-workdoc', { workdocId })
+        socketInstance.off('collaborator-joined')
+        socketInstance.off('collaborator-left')
+        socketInstance.off('workdoc-updated')
       }
     }
-  }, [socket, workdocId, queryClient])
+  }, [socketInstance, workdocId, queryClient])
 
   const updateMutation = useMutation({
     mutationFn: async (data: { title?: string; content?: string }) => {
@@ -136,7 +136,8 @@ export default function WorkdocEditor() {
     return () => {
       clearTimeout(timeout)
     }
-  }, [title, content, hasUnsavedChanges, workdoc, updateMutation])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [title, content, hasUnsavedChanges, workdoc])
 
   const handleTitleChange = (newTitle: string) => {
     setTitle(newTitle)
@@ -457,7 +458,7 @@ export default function WorkdocEditor() {
 
           {/* Editor - Clean and spacious */}
           <div className="min-h-[600px]">
-            <TipTapEditor
+            <LexicalEditor
               content={content}
               onChange={handleContentChange}
               placeholder="Press '/' for commands, or just start typing..."
@@ -479,13 +480,12 @@ export default function WorkdocEditor() {
       {/* Delete Confirmation Dialog */}
       <ConfirmationDialog
         isOpen={showDeleteDialog}
-        onClose={() => setShowDeleteDialog(false)}
+        onCancel={() => setShowDeleteDialog(false)}
         onConfirm={handleDelete}
         title="Delete workdoc"
         message={`Are you sure you want to delete "${title || 'this workdoc'}"? This action cannot be undone.`}
         confirmText="Delete"
-        confirmVariant="danger"
-        isLoading={deleteMutation.isPending}
+        variant="danger"
       />
     </div>
   )

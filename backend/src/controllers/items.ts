@@ -4,6 +4,7 @@ import { AuthRequest } from '../middleware/auth';
 import { executeAutomations } from '../services/automationService';
 import { AutomationTriggerType } from '@monday-clone/shared';
 import { cacheService } from '../services/cacheService';
+import { logger } from '../utils/logger';
 
 const prisma = new PrismaClient();
 
@@ -47,7 +48,7 @@ export const itemController = {
 
       res.json({ success: true, data: items });
     } catch (error: any) {
-      console.error('Get items error:', error);
+      logger.error('Get items error:', { error, userId: req.userId, boardId: req.params.boardId });
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -95,7 +96,7 @@ export const itemController = {
 
       res.json({ success: true, data: item });
     } catch (error: any) {
-      console.error('Get item error:', error);
+      logger.error('Get item error:', { error, userId: req.userId, itemId: req.params.id });
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -140,7 +141,7 @@ export const itemController = {
       // Trigger automations
       executeAutomations(boardId, AutomationTriggerType.ITEM_CREATED, {
         itemId: item.id
-      }).catch(err => console.error('Automation error:', err));
+      }).catch(err => logger.error('Automation error:', { error: err, itemId: item.id, trigger: AutomationTriggerType.ITEM_CREATED }));
 
       // Invalidate cache
       await cacheService.invalidateItem(item.id);
@@ -148,7 +149,7 @@ export const itemController = {
 
       res.status(201).json({ success: true, data: item });
     } catch (error: any) {
-      console.error('Create item error:', error);
+      logger.error('Create item error:', { error, userId: req.userId, boardId: req.body.boardId });
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -204,7 +205,7 @@ export const itemController = {
       // Trigger automations
       executeAutomations(updatedItem.boardId, AutomationTriggerType.ITEM_UPDATED, {
         itemId: updatedItem.id
-      }).catch(err => console.error('Automation error:', err));
+      }).catch(err => logger.error('Automation error:', { error: err, itemId: updatedItem.id, trigger: AutomationTriggerType.ITEM_UPDATED }));
 
       // Invalidate cache
       await cacheService.invalidateItem(id);
@@ -212,7 +213,7 @@ export const itemController = {
 
       res.json({ success: true, data: updatedItem });
     } catch (error: any) {
-      console.error('Update item error:', error);
+      logger.error('Update item error:', { error, userId: req.userId, itemId: req.params.id });
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -234,7 +235,7 @@ export const itemController = {
       if (item) {
         executeAutomations(item.boardId, AutomationTriggerType.ITEM_DELETED, {
           itemId: id
-        }).catch(err => console.error('Automation error:', err));
+        }).catch(err => logger.error('Automation error:', { error: err, itemId: id, trigger: AutomationTriggerType.ITEM_DELETED }));
         
         // Invalidate cache
         await cacheService.invalidateItem(id);
@@ -243,7 +244,7 @@ export const itemController = {
 
       res.json({ success: true, message: 'Item deleted' });
     } catch (error: any) {
-      console.error('Delete item error:', error);
+      logger.error('Delete item error:', { error, userId: req.userId, itemId: req.params.id });
       res.status(500).json({ success: false, error: error.message });
     }
   }

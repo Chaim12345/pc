@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth';
+import { logger } from '../utils/logger';
 
 const prisma = new PrismaClient();
 
@@ -19,7 +20,7 @@ export const automationController = {
 
       res.json({ success: true, data: automation });
     } catch (error: any) {
-      console.error('Get automation error:', error);
+      logger.error('Get automation error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -35,7 +36,7 @@ export const automationController = {
 
       res.json({ success: true, data: automations });
     } catch (error: any) {
-      console.error('Get automations error:', error);
+      logger.error('Get automations error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -56,7 +57,7 @@ export const automationController = {
 
       res.status(201).json({ success: true, data: automation });
     } catch (error: any) {
-      console.error('Create automation error:', error);
+      logger.error('Create automation error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -79,7 +80,7 @@ export const automationController = {
 
       res.json({ success: true, data: automation });
     } catch (error: any) {
-      console.error('Update automation error:', error);
+      logger.error('Update automation error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -94,7 +95,7 @@ export const automationController = {
 
       res.json({ success: true, message: 'Automation deleted' });
     } catch (error: any) {
-      console.error('Delete automation error:', error);
+      logger.error('Delete automation error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -120,7 +121,7 @@ export const automationController = {
 
       res.json({ success: true, message: 'Automation executed' });
     } catch (error: any) {
-      console.error('Execute automation error:', error);
+      logger.error('Execute automation error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   }

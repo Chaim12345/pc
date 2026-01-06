@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { SocketEvent } from '@monday-clone/shared';
 import { notificationService } from '../services/notificationService';
 import { logger } from '../utils/logger';
+import { env } from '../config/env';
 
 interface AuthenticatedSocket extends Socket {
   userId?: string;
@@ -20,7 +21,7 @@ export function setupSocket(io: Server) {
         return next(new Error('Authentication error'));
       }
       
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as { userId: string };
+      const decoded = jwt.verify(token, env.JWT_SECRET) as { userId: string };
       socket.userId = decoded.userId;
       next();
     } catch (error) {

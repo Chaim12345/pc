@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useTheme } from '../contexts/ThemeContext'
 
@@ -11,21 +11,42 @@ const languages = [
 ]
 
 export default function LanguageSwitcher() {
-  const { i18n } = useTranslation()
+  const { i18n, ready } = useTranslation()
   const { theme } = useTheme()
   const isDark = theme === 'dark'
 
-  const handleLanguageChange = (langCode: string) => {
-    i18n.changeLanguage(langCode)
-    // Update document direction for RTL languages
-    if (langCode === 'he') {
+  // Set initial language and direction on mount
+  useEffect(() => {
+    const currentLangCode = i18n.language?.split('-')[0] || 'en'
+    if (currentLangCode === 'he') {
       document.documentElement.setAttribute('dir', 'rtl')
+      document.documentElement.setAttribute('lang', 'he')
     } else {
       document.documentElement.setAttribute('dir', 'ltr')
+      document.documentElement.setAttribute('lang', currentLangCode)
+    }
+  }, [i18n.language])
+
+  const handleLanguageChange = async (langCode: string) => {
+    try {
+      await i18n.changeLanguage(langCode)
+      // Update document direction for RTL languages
+      if (langCode === 'he') {
+        document.documentElement.setAttribute('dir', 'rtl')
+        document.documentElement.setAttribute('lang', 'he')
+      } else {
+        document.documentElement.setAttribute('dir', 'ltr')
+        document.documentElement.setAttribute('lang', langCode)
+      }
+    } catch (error) {
+      console.error('Failed to change language:', error)
     }
   }
 
-  const currentLanguage = languages.find(lang => lang.code === i18n.language) || languages[0]
+  // Get the current language, handling both full locale (e.g., 'en-US') and language code (e.g., 'en')
+  // Use i18n.language which will trigger re-renders when changed
+  const currentLangCode = i18n.language?.split('-')[0] || 'en'
+  const currentLanguage = languages.find(lang => lang.code === currentLangCode) || languages[0]
 
   return (
     <div className="relative group">
@@ -48,12 +69,12 @@ export default function LanguageSwitcher() {
             key={lang.code}
             onClick={() => handleLanguageChange(lang.code)}
             className={`w-full flex items-center space-x-3 px-4 py-2 text-left hover:bg-[var(--vibe-bg-hover)] transition-colors first:rounded-t-lg last:rounded-b-lg ${
-              i18n.language === lang.code ? 'bg-[var(--vibe-bg-selected)]' : ''
+              currentLangCode === lang.code ? 'bg-[var(--vibe-bg-selected)]' : ''
             }`}
           >
             <span className="text-xl">{lang.flag}</span>
             <span className="text-sm text-[var(--vibe-primary-text)]">{lang.name}</span>
-            {i18n.language === lang.code && (
+            {currentLangCode === lang.code && (
               <svg className="w-4 h-4 ml-auto text-[var(--vibe-primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>

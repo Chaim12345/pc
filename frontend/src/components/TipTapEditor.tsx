@@ -1,11 +1,26 @@
-import React, { useEffect } from 'react'
-import { useEditor, EditorContent } from '@tiptap/react'
-import StarterKit from '@tiptap/starter-kit'
-import Placeholder from '@tiptap/extension-placeholder'
-import Link from '@tiptap/extension-link'
-import Image from '@tiptap/extension-image'
 import { Extension } from '@tiptap/core'
+import { Color } from '@tiptap/extension-color'
+import Dropcursor from '@tiptap/extension-dropcursor'
+import Gapcursor from '@tiptap/extension-gapcursor'
+import Highlight from '@tiptap/extension-highlight'
+import Image from '@tiptap/extension-image'
+import Link from '@tiptap/extension-link'
+import Placeholder from '@tiptap/extension-placeholder'
+import { Table } from '@tiptap/extension-table'
+import { TableCell } from '@tiptap/extension-table-cell'
+import { TableHeader } from '@tiptap/extension-table-header'
+import { TableRow } from '@tiptap/extension-table-row'
+import TaskItem from '@tiptap/extension-task-item'
+import TaskList from '@tiptap/extension-task-list'
+import TextAlign from '@tiptap/extension-text-align'
+import { TextStyle } from '@tiptap/extension-text-style'
+import Underline from '@tiptap/extension-underline'
+import { EditorContent, useEditor } from '@tiptap/react'
+import StarterKit from '@tiptap/starter-kit'
 import Suggestion from '@tiptap/suggestion'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
+import { useToast } from '../contexts/ToastContext'
+import { api } from '../services/api'
 import { renderSlashCommands } from './SlashCommands'
 
 interface Props {
@@ -31,28 +46,96 @@ const SlashCommand = Extension.create({
 })
 
 export default function TipTapEditor({ content, onChange, placeholder }: Props) {
+  const { showToast } = useToast()
+  const [isUploadingImage, setIsUploadingImage] = useState(false)
+  const [showLinkModal, setShowLinkModal] = useState(false)
+  const [linkUrl, setLinkUrl] = useState('')
+  const [linkText, setLinkText] = useState('')
+  const [showFloatingMenu, setShowFloatingMenu] = useState(false)
+  const [floatingMenuPosition, setFloatingMenuPosition] = useState({ top: 0, left: 0 })
+  const editorRef = useRef<HTMLDivElement>(null)
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
         heading: {
           levels: [1, 2, 3]
-        }
+        },
+        strike: false,
+        // Disable extensions that we're adding separately to avoid duplicates
+        link: false,
+        underline: false,
+        dropcursor: false,
+        gapcursor: false,
       }),
       Placeholder.configure({
-        placeholder: placeholder || 'Start writing...'
+        placeholder: placeholder || 'Start writing...',
+        emptyEditorClass: 'cursor-text before:content-[attr(data-placeholder)] before:absolute before:top-0 before:left-0 before:text-[var(--vibe-secondary-text)] before:pointer-events-none before:opacity-60'
       }),
       Link.configure({
         openOnClick: false,
         HTMLAttributes: {
-          class: 'text-[var(--vibe-primary)] hover:underline cursor-pointer transition-colors'
+          class: 'text-[var(--vibe-primary)] hover:underline cursor-pointer transition-colors decoration-2 underline-offset-2'
         }
       }),
       Image.configure({
         HTMLAttributes: {
-          class: 'max-w-full h-auto rounded-lg'
+          class: 'max-w-full h-auto rounded-xl my-6 shadow-lg border border-[var(--vibe-border-light)] transition-all hover:shadow-xl'
+        },
+        allowBase64: true,
+      }),
+      Table.configure({
+        resizable: true,
+        HTMLAttributes: {
+          class: 'border-collapse border border-[var(--vibe-border-light)] my-6 rounded-lg overflow-hidden shadow-sm'
         }
       }),
-      SlashCommand
+      TableRow.configure({
+        HTMLAttributes: {
+          class: 'border border-[var(--vibe-border-light)] hover:bg-[var(--vibe-bg-hover)] transition-colors'
+        }
+      }),
+      TableHeader.configure({
+        HTMLAttributes: {
+          class: 'border border-[var(--vibe-border-light)] bg-[var(--vibe-bg-hover)] px-4 py-3 font-semibold text-sm'
+        }
+      }),
+      TableCell.configure({
+        HTMLAttributes: {
+          class: 'border border-[var(--vibe-border-light)] px-4 py-3 focus-within:ring-2 focus-within:ring-[var(--vibe-primary)] focus-within:ring-offset-1 transition-all'
+        }
+      }),
+      TaskList.configure({
+        HTMLAttributes: {
+          class: 'list-none pl-0 my-4 space-y-2'
+        }
+      }),
+      TaskItem.configure({
+        nested: true,
+        HTMLAttributes: {
+          class: 'flex items-start my-2 group'
+        }
+      }),
+      Highlight.configure({
+        multicolor: true,
+        HTMLAttributes: {
+          class: 'px-1 rounded bg-yellow-200 dark:bg-yellow-900/40'
+        }
+      }),
+      TextStyle,
+      Color.configure({
+        types: ['textStyle'],
+      }),
+      Underline,
+      TextAlign.configure({
+        types: ['heading', 'paragraph'],
+      }),
+      Dropcursor.configure({
+        color: 'var(--vibe-primary)',
+        width: 3,
+      }),
+      Gapcursor,
+      SlashCommand,
     ],
     content,
     onUpdate: ({ editor }) => {
@@ -60,8 +143,43 @@ export default function TipTapEditor({ content, onChange, placeholder }: Props) 
     },
     editorProps: {
       attributes: {
-        class: 'prose prose-lg max-w-none focus:outline-none min-h-[500px] text-[var(--vibe-primary-text)] prose-headings:font-bold prose-h1:text-4xl prose-h2:text-3xl prose-h3:text-2xl prose-p:text-base prose-p:leading-relaxed prose-li:my-1'
-      }
+        class: 'prose prose-lg max-w-none focus:outline-none min-h-[500px] text-[var(--vibe-primary-text)] prose-headings:font-bold prose-h1:text-4xl prose-h1:mt-8 prose-h1:mb-4 prose-h2:text-3xl prose-h2:mt-6 prose-h2:mb-3 prose-h3:text-2xl prose-h3:mt-4 prose-h3:mb-2 prose-p:text-base prose-p:leading-relaxed prose-p:my-3 prose-li:my-2 prose-table:w-full prose-th:border prose-td:border prose-th:p-2 prose-td:p-2 prose-blockquote:border-l-4 prose-blockquote:border-[var(--vibe-primary)] prose-blockquote:pl-4 prose-blockquote:italic prose-code:bg-[var(--vibe-bg-hover)] prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-pre:bg-[var(--vibe-bg-secondary)] prose-pre:rounded-lg prose-pre:p-4 prose-pre:overflow-x-auto'
+      },
+      handleDrop: (view, event, _slice, moved) => {
+        if (!moved && event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files.length > 0) {
+          event.preventDefault()
+          const file = event.dataTransfer.files[0]
+          if (file && file.type.startsWith('image/')) {
+            handleImageUpload(file)
+            return true
+          }
+        }
+        return false
+      },
+      handlePaste: (view, event, _slice) => {
+        if (!event.clipboardData) return false
+        
+        const items = Array.from(event.clipboardData.items || [])
+        const imageItem = items.find(item => item.type.startsWith('image/'))
+        
+        if (imageItem) {
+          event.preventDefault()
+          const file = imageItem.getAsFile()
+          if (file) {
+            handleImageUpload(file)
+            return true
+          }
+        }
+        
+        // Also check for image URLs in clipboard text
+        const text = event.clipboardData.getData('text/plain')
+        if (text && (text.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i) || text.startsWith('http'))) {
+          // Allow normal paste for URLs, user can convert to image manually
+          return false
+        }
+        
+        return false
+      },
     }
   })
 
@@ -72,36 +190,394 @@ export default function TipTapEditor({ content, onChange, placeholder }: Props) 
     }
   }, [content, editor])
 
-  const addLink = () => {
-    const url = window.prompt('Enter URL')
-    if (url && editor) {
-      editor.chain().focus().setLink({ href: url }).run()
+  // Handle floating menu on selection
+  useEffect(() => {
+    if (!editor || !editorRef.current) return
+
+    const updateMenuPosition = () => {
+      const { selection } = editor.state
+      const hasSelection = !selection.empty
+
+      if (hasSelection) {
+        try {
+          const { from, to } = selection
+          const start = editor.view.coordsAtPos(from)
+          const end = editor.view.coordsAtPos(to)
+          
+          // Get editor container position
+          const editorRect = editorRef.current!.getBoundingClientRect()
+          
+          // Calculate position relative to editor container
+          const top = start.top - editorRect.top - 10
+          const left = ((start.left + end.left) / 2) - editorRect.left
+          
+          // Ensure menu stays within editor bounds
+          const menuWidth = 300 // Approximate menu width
+          const boundedLeft = Math.max(10, Math.min(left, editorRect.width - menuWidth - 10))
+          const boundedTop = Math.max(10, top)
+          
+          setFloatingMenuPosition({ top: boundedTop, left: boundedLeft })
+          setShowFloatingMenu(true)
+        } catch (e) {
+          // Ignore coordinate errors
+          setShowFloatingMenu(false)
+        }
+      } else {
+        setShowFloatingMenu(false)
+      }
     }
+
+    const handleSelectionUpdate = () => {
+      console.log('selectionUpdate fired', editor.state.selection) // Debug log
+      updateMenuPosition()
+    }
+
+    const handleBlur = () => {
+      // Delay hiding to allow clicking menu buttons
+      setTimeout(() => setShowFloatingMenu(false), 200)
+    }
+
+    // Update position on scroll
+    const handleScroll = () => {
+      if (showFloatingMenu) {
+        updateMenuPosition()
+      }
+    }
+
+    editor.on('selectionUpdate', handleSelectionUpdate)
+    editor.on('focus', handleSelectionUpdate)
+    editor.on('blur', handleBlur)
+    
+    // Listen to scroll events on editor container and window
+    const editorContainer = editorRef.current
+    window.addEventListener('scroll', handleScroll, true)
+    editorContainer.addEventListener('scroll', handleScroll, true)
+
+    return () => {
+      editor.off('selectionUpdate', handleSelectionUpdate)
+      editor.off('focus', handleSelectionUpdate)
+      editor.off('blur', handleBlur)
+      window.removeEventListener('scroll', handleScroll, true)
+      editorContainer.removeEventListener('scroll', handleScroll, true)
+    }
+  }, [editor, showFloatingMenu])
+
+  const handleImageUpload = useCallback(async (file: File) => {
+    if (!editor) return
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      showToast('Please upload an image file', 'error')
+      return
+    }
+
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      showToast('Image size must be less than 10MB', 'error')
+      return
+    }
+
+    setIsUploadingImage(true)
+    
+    // Show temporary placeholder while uploading
+    const placeholderId = `placeholder-${Date.now()}`
+    const placeholderUrl = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtc2l6ZT0iMTgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIiBmaWxsPSIjOTk5Ij5VcGxvYWRpbmcuLi48L3RleHQ+PC9zdmc+'
+    editor.chain().focus().setImage({ src: placeholderUrl }).run()
+
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const response = await api.post('/attachments/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
+
+      const imageUrl = response.data.data?.url || response.data.data?.fileUrl
+      if (imageUrl) {
+        // Replace placeholder with actual image
+        const { tr } = editor.state
+        const { from, to } = editor.state.selection
+        editor.view.dispatch(tr.replaceWith(from - 1, to, editor.schema.nodes.image.create({ src: imageUrl })))
+        showToast('Image uploaded successfully', 'success')
+      } else {
+        throw new Error('No image URL returned from server')
+      }
+    } catch (error: any) {
+      console.error('Failed to upload image:', error)
+      showToast(error.response?.data?.error || 'Failed to upload image', 'error')
+      
+      // Remove placeholder on error
+      try {
+        editor.chain().focus().deleteSelection().run()
+      } catch (e) {
+        // Ignore deletion errors
+      }
+      
+      // Optionally: create object URL for preview (commented out to avoid memory leaks)
+      // const objectUrl = URL.createObjectURL(file)
+      // editor.chain().focus().setImage({ src: objectUrl }).run()
+    } finally {
+      setIsUploadingImage(false)
+    }
+  }, [editor, showToast])
+
+  const handleAddLink = () => {
+    if (!editor) return
+    
+    console.log('handleAddLink called') // Debug log
+    
+    const { from, to } = editor.state.selection
+    const selectedText = editor.state.doc.textBetween(from, to)
+    
+    if (editor.isActive('link')) {
+      const attrs = editor.getAttributes('link')
+      setLinkUrl(attrs.href || '')
+      setLinkText(selectedText || '')
+    } else {
+      setLinkUrl('')
+      setLinkText(selectedText || '')
+    }
+    
+    console.log('Setting showLinkModal to true') // Debug log
+    setShowLinkModal(true)
+  }
+
+  const handleSaveLink = () => {
+    if (!editor || !linkUrl.trim()) return
+
+    // Ensure URL has protocol
+    let finalUrl = linkUrl.trim()
+    if (!finalUrl.match(/^https?:\/\//i)) {
+      finalUrl = 'https://' + finalUrl
+    }
+
+    if (editor.isActive('link')) {
+      // Update existing link
+      if (linkText.trim()) {
+        editor.chain().focus().extendMarkRange('link').setLink({ href: finalUrl }).insertContent(linkText.trim()).run()
+      } else {
+        editor.chain().focus().extendMarkRange('link').setLink({ href: finalUrl }).run()
+      }
+    } else {
+      // Insert new link
+      if (linkText.trim()) {
+        editor.chain().focus().insertContent(`<a href="${finalUrl}">${linkText.trim()}</a>`).run()
+      } else {
+        const { from, to } = editor.state.selection
+        const selectedText = editor.state.doc.textBetween(from, to)
+        if (selectedText) {
+          // Apply link to selected text
+          editor.chain().focus().setLink({ href: finalUrl }).run()
+        } else {
+          // Insert link with URL as text
+          editor.chain().focus().insertContent(`<a href="${finalUrl}">${finalUrl}</a>`).run()
+        }
+      }
+    }
+    
+    setShowLinkModal(false)
+    setLinkUrl('')
+    setLinkText('')
+  }
+
+  const handleRemoveLink = () => {
+    if (!editor) return
+    editor.chain().focus().unsetLink().run()
+    setShowLinkModal(false)
   }
 
   const addImage = () => {
-    const url = window.prompt('Enter image URL')
-    if (url && editor) {
-      editor.chain().focus().setImage({ src: url }).run()
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = 'image/*'
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0]
+      if (file) {
+        handleImageUpload(file)
+      }
+    }
+    input.click()
+  }
+
+  const addTable = () => {
+    if (!editor) return
+    console.log('addTable called') // Debug log
+    try {
+      editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
+      console.log('Table inserted successfully') // Debug log
+    } catch (error) {
+      console.error('Failed to insert table:', error)
+      showToast('Failed to insert table', 'error')
+    }
+  }
+
+  const insertTableRow = () => {
+    if (!editor || !editor.isActive('table')) return
+    try {
+      if (editor.can().addRowAfter()) {
+        editor.chain().focus().addRowAfter().run()
+      } else {
+        showToast('Cannot add row here', 'error')
+      }
+    } catch (error) {
+      console.error('Failed to add row:', error)
+      showToast('Failed to add row', 'error')
+    }
+  }
+
+  const deleteTableRow = () => {
+    if (!editor || !editor.isActive('table')) return
+    try {
+      if (editor.can().deleteRow()) {
+        editor.chain().focus().deleteRow().run()
+      } else {
+        showToast('Cannot delete row', 'error')
+      }
+    } catch (error) {
+      console.error('Failed to delete row:', error)
+      showToast('Failed to delete row', 'error')
+    }
+  }
+
+  const insertTableColumn = () => {
+    if (!editor || !editor.isActive('table')) return
+    try {
+      if (editor.can().addColumnAfter()) {
+        editor.chain().focus().addColumnAfter().run()
+      } else {
+        showToast('Cannot add column here', 'error')
+      }
+    } catch (error) {
+      console.error('Failed to add column:', error)
+      showToast('Failed to add column', 'error')
+    }
+  }
+
+  const deleteTableColumn = () => {
+    if (!editor || !editor.isActive('table')) return
+    try {
+      if (editor.can().deleteColumn()) {
+        editor.chain().focus().deleteColumn().run()
+      } else {
+        showToast('Cannot delete column', 'error')
+      }
+    } catch (error) {
+      console.error('Failed to delete column:', error)
+      showToast('Failed to delete column', 'error')
+    }
+  }
+
+  const deleteTable = () => {
+    if (!editor || !editor.isActive('table')) return
+    try {
+      if (editor.can().deleteTable()) {
+        editor.chain().focus().deleteTable().run()
+      } else {
+        showToast('Cannot delete table', 'error')
+      }
+    } catch (error) {
+      console.error('Failed to delete table:', error)
+      showToast('Failed to delete table', 'error')
     }
   }
 
   if (!editor) {
-    return null
+    return (
+      <div className="flex items-center justify-center min-h-[500px]">
+        <div className="animate-pulse text-[var(--vibe-secondary-text)]">Loading editor...</div>
+      </div>
+    )
   }
 
+  const isTableActive = editor.isActive('table')
+  const hasSelection = editor.state.selection.empty === false
+
   return (
-    <div className="overflow-hidden bg-transparent">
-      {/* Toolbar - Notion-style floating */}
-      <div className="sticky top-16 z-10 mb-4 bg-[var(--vibe-bg-primary)] border border-[var(--vibe-border-light)] rounded-xl p-2 flex flex-wrap gap-1 shadow-sm backdrop-blur-sm"
+    <div className="overflow-hidden bg-transparent relative" ref={editorRef}>
+      {/* Floating Menu - Appears on text selection */}
+      {showFloatingMenu && hasSelection && (
+        <div
+          className="absolute z-50 flex items-center gap-1 bg-[var(--vibe-bg-primary)] border border-[var(--vibe-border-light)] rounded-lg shadow-xl p-1.5 backdrop-blur-sm transition-all duration-200"
+          style={{
+            top: `${floatingMenuPosition.top}px`,
+            left: `${floatingMenuPosition.left}px`,
+            transform: 'translate(-50%, -100%)',
+          }}
+          onMouseDown={(e) => e.preventDefault()}
+        >
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleBold().run()}
+            isActive={editor.isActive('bold')}
+            title="Bold"
+            size="small"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z" />
+            </svg>
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleItalic().run()}
+            isActive={editor.isActive('italic')}
+            title="Italic"
+            size="small"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <line x1="19" y1="4" x2="10" y2="4" strokeWidth={2} />
+              <line x1="14" y1="20" x2="5" y2="20" strokeWidth={2} />
+              <line x1="15" y1="4" x2="9" y2="20" strokeWidth={2} />
+            </svg>
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleUnderline().run()}
+            isActive={editor.isActive('underline')}
+            title="Underline"
+            size="small"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 19h14M5 5h14" />
+            </svg>
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleHighlight().run()}
+            isActive={editor.isActive('highlight')}
+            title="Highlight"
+            size="small"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+            </svg>
+          </ToolbarButton>
+          <div className="w-px h-6 bg-[var(--vibe-border-light)] mx-1" />
+          <ToolbarButton
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              handleAddLink()
+            }}
+            isActive={editor.isActive('link')}
+            title="Add Link"
+            size="small"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+            </svg>
+          </ToolbarButton>
+        </div>
+      )}
+
+      {/* Main Toolbar - Improved organization */}
+      <div className="sticky top-16 z-10 mb-6 bg-[var(--vibe-bg-primary)]/95 backdrop-blur-md border border-[var(--vibe-border-light)] rounded-xl p-2.5 flex flex-wrap gap-1.5 shadow-lg transition-all duration-200"
         style={{ marginLeft: '-0.5rem', marginRight: '-0.5rem' }}
       >
-        {/* Text Formatting */}
-        <div className="flex items-center space-x-1 border-r border-[var(--vibe-border-light)] pr-2">
+        {/* Text Formatting Group */}
+        <ToolbarGroup label="Formatting">
           <ToolbarButton
             onClick={() => editor.chain().focus().toggleBold().run()}
             isActive={editor.isActive('bold')}
             title="Bold (Ctrl+B)"
+            shortcut="Ctrl+B"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z" />
@@ -111,11 +587,22 @@ export default function TipTapEditor({ content, onChange, placeholder }: Props) 
             onClick={() => editor.chain().focus().toggleItalic().run()}
             isActive={editor.isActive('italic')}
             title="Italic (Ctrl+I)"
+            shortcut="Ctrl+I"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <line x1="19" y1="4" x2="10" y2="4" strokeWidth={2} />
               <line x1="14" y1="20" x2="5" y2="20" strokeWidth={2} />
               <line x1="15" y1="4" x2="9" y2="20" strokeWidth={2} />
+            </svg>
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleUnderline().run()}
+            isActive={editor.isActive('underline')}
+            title="Underline (Ctrl+U)"
+            shortcut="Ctrl+U"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 19h14M5 5h14" />
             </svg>
           </ToolbarButton>
           <ToolbarButton
@@ -130,16 +617,25 @@ export default function TipTapEditor({ content, onChange, placeholder }: Props) 
           <ToolbarButton
             onClick={() => editor.chain().focus().toggleCode().run()}
             isActive={editor.isActive('code')}
-            title="Code"
+            title="Inline Code"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
             </svg>
           </ToolbarButton>
-        </div>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleHighlight().run()}
+            isActive={editor.isActive('highlight')}
+            title="Highlight"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+            </svg>
+          </ToolbarButton>
+        </ToolbarGroup>
 
-        {/* Headings */}
-        <div className="flex items-center space-x-1 border-r border-[var(--vibe-border-light)] pr-2">
+        {/* Headings Group */}
+        <ToolbarGroup label="Headings">
           <ToolbarButton
             onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
             isActive={editor.isActive('heading', { level: 1 })}
@@ -161,10 +657,10 @@ export default function TipTapEditor({ content, onChange, placeholder }: Props) 
           >
             <span className="font-bold text-sm">H3</span>
           </ToolbarButton>
-        </div>
+        </ToolbarGroup>
 
-        {/* Lists */}
-        <div className="flex items-center space-x-1 border-r border-[var(--vibe-border-light)] pr-2">
+        {/* Lists Group */}
+        <ToolbarGroup label="Lists">
           <ToolbarButton
             onClick={() => editor.chain().focus().toggleBulletList().run()}
             isActive={editor.isActive('bulletList')}
@@ -183,10 +679,90 @@ export default function TipTapEditor({ content, onChange, placeholder }: Props) 
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h1v5H3V4zM3 10h1l1 5H3v-5zM8 6h13M8 12h13M8 18h13M3 16h1l1 5H3v-5z" />
             </svg>
           </ToolbarButton>
-        </div>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleTaskList().run()}
+            isActive={editor.isActive('taskList')}
+            title="Task List"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </ToolbarButton>
+        </ToolbarGroup>
 
-        {/* Quotes & Code */}
-        <div className="flex items-center space-x-1 border-r border-[var(--vibe-border-light)] pr-2">
+        {/* Alignment Group */}
+        <ToolbarGroup label="Alignment">
+          <ToolbarButton
+            onClick={() => editor.chain().focus().setTextAlign('left').run()}
+            isActive={editor.isActive({ textAlign: 'left' })}
+            title="Align Left"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18M3 6h18" />
+            </svg>
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().setTextAlign('center').run()}
+            isActive={editor.isActive({ textAlign: 'center' })}
+            title="Align Center"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().setTextAlign('right').run()}
+            isActive={editor.isActive({ textAlign: 'right' })}
+            title="Align Right"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 10H3M21 14H3M21 6H3" />
+            </svg>
+          </ToolbarButton>
+        </ToolbarGroup>
+
+        {/* Insert Group */}
+        <ToolbarGroup label="Insert">
+          <ToolbarButton
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              handleAddLink()
+            }}
+            isActive={editor.isActive('link')}
+            title="Add Link"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+            </svg>
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={addImage}
+            title="Add Image"
+            disabled={isUploadingImage}
+          >
+            {isUploadingImage ? (
+              <div className="w-4 h-4 border-2 border-[var(--vibe-primary)] border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            )}
+          </ToolbarButton>
+          {!isTableActive && (
+            <ToolbarButton
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                addTable()
+              }}
+              title="Insert Table"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </ToolbarButton>
+          )}
           <ToolbarButton
             onClick={() => editor.chain().focus().toggleBlockquote().run()}
             isActive={editor.isActive('blockquote')}
@@ -205,31 +781,6 @@ export default function TipTapEditor({ content, onChange, placeholder }: Props) 
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
           </ToolbarButton>
-        </div>
-
-        {/* Links & Images */}
-        <div className="flex items-center space-x-1 border-r border-[var(--vibe-border-light)] pr-2">
-          <ToolbarButton
-            onClick={addLink}
-            isActive={editor.isActive('link')}
-            title="Add Link"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-            </svg>
-          </ToolbarButton>
-          <ToolbarButton
-            onClick={addImage}
-            title="Add Image"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-          </ToolbarButton>
-        </div>
-
-        {/* Divider & Clear */}
-        <div className="flex items-center space-x-1">
           <ToolbarButton
             onClick={() => editor.chain().focus().setHorizontalRule().run()}
             title="Horizontal Rule"
@@ -238,6 +789,41 @@ export default function TipTapEditor({ content, onChange, placeholder }: Props) 
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14" />
             </svg>
           </ToolbarButton>
+        </ToolbarGroup>
+
+        {/* Table Controls - Only show when table is active */}
+        {isTableActive && (
+          <ToolbarGroup label="Table">
+            <ToolbarButton onClick={insertTableRow} title="Add Row">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+            </ToolbarButton>
+            <ToolbarButton onClick={deleteTableRow} title="Delete Row">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+              </svg>
+            </ToolbarButton>
+            <ToolbarButton onClick={insertTableColumn} title="Add Column">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" transform="rotate(90 12 12)" />
+              </svg>
+            </ToolbarButton>
+            <ToolbarButton onClick={deleteTableColumn} title="Delete Column">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" transform="rotate(90 12 12)" />
+              </svg>
+            </ToolbarButton>
+            <ToolbarButton onClick={deleteTable} title="Delete Table">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </ToolbarButton>
+          </ToolbarGroup>
+        )}
+
+        {/* Actions Group */}
+        <ToolbarGroup label="Actions" className="ml-auto">
           <ToolbarButton
             onClick={() => editor.chain().focus().clearNodes().unsetAllMarks().run()}
             title="Clear Formatting"
@@ -246,14 +832,11 @@ export default function TipTapEditor({ content, onChange, placeholder }: Props) 
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </ToolbarButton>
-        </div>
-
-        {/* Undo/Redo */}
-        <div className="flex items-center space-x-1 ml-auto">
           <ToolbarButton
             onClick={() => editor.chain().focus().undo().run()}
             disabled={!editor.can().undo()}
             title="Undo (Ctrl+Z)"
+            shortcut="Ctrl+Z"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
@@ -263,18 +846,110 @@ export default function TipTapEditor({ content, onChange, placeholder }: Props) 
             onClick={() => editor.chain().focus().redo().run()}
             disabled={!editor.can().redo()}
             title="Redo (Ctrl+Shift+Z)"
+            shortcut="Ctrl+Shift+Z"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 10h-10a8 8 0 00-8 8v2M21 10l-6 6m6-6l-6-6" />
             </svg>
           </ToolbarButton>
-        </div>
+        </ToolbarGroup>
       </div>
 
-      {/* Editor Content - Clean, no visible borders */}
-      <div className="min-h-[600px] text-lg">
+      {/* Link Modal - Better UX than prompt */}
+      {showLinkModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setShowLinkModal(false)}>
+          <div className="bg-[var(--vibe-bg-primary)] border border-[var(--vibe-border-light)] rounded-xl shadow-2xl p-6 w-full max-w-md mx-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-[var(--vibe-primary-text)] mb-4">Add Link</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-[var(--vibe-secondary-text)] mb-2">URL</label>
+                <input
+                  type="url"
+                  value={linkUrl}
+                  onChange={(e) => setLinkUrl(e.target.value)}
+                  placeholder="https://example.com"
+                  className="w-full px-3 py-2 border border-[var(--vibe-border-light)] rounded-lg bg-[var(--vibe-bg-secondary)] text-[var(--vibe-primary-text)] focus:outline-none focus:ring-2 focus:ring-[var(--vibe-primary)] transition-all"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleSaveLink()
+                    } else if (e.key === 'Escape') {
+                      setShowLinkModal(false)
+                    }
+                  }}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[var(--vibe-secondary-text)] mb-2">Text (optional)</label>
+                <input
+                  type="text"
+                  value={linkText}
+                  onChange={(e) => setLinkText(e.target.value)}
+                  placeholder="Link text"
+                  className="w-full px-3 py-2 border border-[var(--vibe-border-light)] rounded-lg bg-[var(--vibe-bg-secondary)] text-[var(--vibe-primary-text)] focus:outline-none focus:ring-2 focus:ring-[var(--vibe-primary)] transition-all"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleSaveLink()
+                    } else if (e.key === 'Escape') {
+                      setShowLinkModal(false)
+                    }
+                  }}
+                />
+              </div>
+              <div className="flex items-center justify-end gap-2 pt-2">
+                {editor.isActive('link') && (
+                  <button
+                    onClick={handleRemoveLink}
+                    className="px-4 py-2 text-sm font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                  >
+                    Remove Link
+                  </button>
+                )}
+                <button
+                  onClick={() => setShowLinkModal(false)}
+                  className="px-4 py-2 text-sm font-medium text-[var(--vibe-secondary-text)] hover:bg-[var(--vibe-bg-hover)] rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveLink}
+                  disabled={!linkUrl.trim()}
+                  className="px-4 py-2 text-sm font-medium text-white bg-[var(--vibe-primary)] hover:bg-[var(--vibe-primary-selected)] rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Add Link
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Editor Content */}
+      <div className="min-h-[600px] text-lg relative">
         <EditorContent editor={editor} />
       </div>
+
+      {/* Upload Progress Indicator */}
+      {isUploadingImage && (
+        <div className="fixed bottom-4 right-4 bg-[var(--vibe-bg-primary)] border border-[var(--vibe-border-light)] rounded-lg shadow-lg p-3 flex items-center gap-3 z-50">
+          <div className="w-5 h-5 border-2 border-[var(--vibe-primary)] border-t-transparent rounded-full animate-spin" />
+          <span className="text-sm text-[var(--vibe-primary-text)]">Uploading image...</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+interface ToolbarGroupProps {
+  label?: string
+  children: React.ReactNode
+  className?: string
+}
+
+function ToolbarGroup({ label, children, className = '' }: ToolbarGroupProps) {
+  return (
+    <div className={`flex items-center gap-1 border-r border-[var(--vibe-border-light)] pr-2 last:border-r-0 ${className}`}>
+      {children}
     </div>
   )
 }
@@ -284,27 +959,28 @@ interface ToolbarButtonProps {
   isActive?: boolean
   disabled?: boolean
   title?: string
+  shortcut?: string
+  size?: 'small' | 'normal'
   children: React.ReactNode
 }
 
-function ToolbarButton({ onClick, isActive, disabled, title, children }: ToolbarButtonProps) {
+function ToolbarButton({ onClick, isActive, disabled, title, shortcut, size = 'normal', children }: ToolbarButtonProps) {
+  const padding = size === 'small' ? 'p-1.5' : 'p-2'
+  
   return (
     <button
       onClick={onClick}
       disabled={disabled}
-      title={title}
-      className={`p-2 rounded-[var(--vibe-radius-small)] transition-colors ${
+      title={shortcut ? `${title} (${shortcut})` : title}
+      className={`${padding} rounded-lg transition-all duration-150 ${
         isActive
-          ? 'bg-[var(--vibe-primary)] text-white'
-          : 'text-[var(--vibe-icon-color)] hover:bg-[var(--vibe-bg-hover)]'
+          ? 'bg-[var(--vibe-primary)] text-white shadow-md scale-105'
+          : 'text-[var(--vibe-icon-color)] hover:bg-[var(--vibe-bg-hover)] hover:scale-105'
       } ${
-        disabled ? 'opacity-50 cursor-not-allowed' : ''
-      }`}
+        disabled ? 'opacity-40 cursor-not-allowed hover:scale-100' : 'cursor-pointer'
+      } active:scale-95`}
     >
       {children}
     </button>
   )
 }
-
-
-

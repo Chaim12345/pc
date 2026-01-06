@@ -6,6 +6,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
+import { logger } from '../utils/logger';
 
 const prisma = new PrismaClient();
 
@@ -64,7 +65,7 @@ export const usersController = {
 
       res.json({ success: true, data: user });
     } catch (error) {
-      console.error('Get profile error:', error);
+      logger.error('Get profile error:', { error, userId: req.userId });
       res.status(500).json({ success: false, error: 'Failed to fetch profile' });
     }
   },
@@ -108,7 +109,7 @@ export const usersController = {
 
       res.json({ success: true, data: updatedUser });
     } catch (error) {
-      console.error('Update profile error:', error);
+      logger.error('Update profile error:', { error, userId: req.userId });
       res.status(500).json({ success: false, error: 'Failed to update profile' });
     }
   },
@@ -153,7 +154,7 @@ export const usersController = {
 
       res.json({ success: true, message: 'Password changed successfully' });
     } catch (error) {
-      console.error('Change password error:', error);
+      logger.error('Change password error:', { error, userId: req.userId });
       res.status(500).json({ success: false, error: 'Failed to change password' });
     }
   },
@@ -197,7 +198,7 @@ export const usersController = {
 
       res.json({ success: true, data: updatedUser });
     } catch (error) {
-      console.error('Upload avatar error:', error);
+      logger.error('Upload avatar error:', { error, userId: req.userId });
       res.status(500).json({ success: false, error: 'Failed to upload avatar' });
     }
   },
@@ -208,8 +209,9 @@ export const usersController = {
       const { query } = req.query;
       const userId = req.userId;
 
-      if (!query || typeof query !== 'string') {
-        return res.status(400).json({ success: false, error: 'Query parameter is required' });
+      // Handle empty query gracefully - return empty array instead of error
+      if (!query || typeof query !== 'string' || query.trim() === '') {
+        return res.json({ success: true, data: [] });
       }
 
       // Get user's organization to only search within same org
@@ -245,7 +247,7 @@ export const usersController = {
 
       res.json({ success: true, data: users });
     } catch (error) {
-      console.error('Search users error:', error);
+      logger.error('Search users error:', { error, userId: req.userId });
       res.status(500).json({ success: false, error: 'Failed to search users' });
     }
   },
@@ -272,7 +274,7 @@ export const usersController = {
 
       res.json({ success: true, data: user });
     } catch (error) {
-      console.error('Get user error:', error);
+      logger.error('Get user error:', { error, userId: req.userId, targetUserId: req.params.id });
       res.status(500).json({ success: false, error: 'Failed to fetch user' });
     }
   },
@@ -313,7 +315,7 @@ export const usersController = {
 
       res.json({ success: true, data: users });
     } catch (error) {
-      console.error('Get users in organization error:', error);
+      logger.error('Get users in organization error:', { error, userId: req.userId, organizationId: req.params.organizationId });
       res.status(500).json({ success: false, error: 'Failed to fetch users' });
     }
   },
@@ -419,7 +421,7 @@ export const usersController = {
         totalPages: Math.ceil(total / limit),
       });
     } catch (error) {
-      console.error('Get all users error:', error);
+      logger.error('Get all users error:', { error, userId: req.userId });
       res.status(500).json({ success: false, error: 'Failed to fetch users' });
     }
   },
@@ -437,12 +439,17 @@ export const usersController = {
       // Get inviter's organization
       const orgMembership = await prisma.organizationMember.findFirst({
         where: { userId: inviterId },
-        include: { organization: true },
+        include: { 
+          organization: true,
+          user: true, // Include inviter user data
+        },
       });
 
       if (!orgMembership) {
         return res.status(403).json({ success: false, error: 'You must be part of an organization to invite users' });
       }
+
+      const inviter = orgMembership.user;
 
       // Check if user already exists
       const existingUser = await prisma.user.findUnique({
@@ -520,25 +527,27 @@ export const usersController = {
         },
       });
 
-      // Future enhancement: Send invitation email with temporary password
-      // This would require:
-      // - Email service integration (e.g., SendGrid, AWS SES, Nodemailer)
-      // - Email template system
-      // - Welcome message with temporary password
-      // - Link to set up account and change password
-      // For now, the user is created and can log in with the provided password
+      // Send invitation email with temporary password
+      const { emailService } = await import('../services/emailService');
+      await emailService.sendInvitationEmail(
+        email,
+        inviter.name,
+        orgMembership.organization.name,
+        tempPassword,
+        role || 'MEMBER'
+      );
 
       res.status(201).json({
         success: true,
         data: {
           ...newUser,
           message: 'User invited successfully. They will receive an email with setup instructions.',
-          // In development, you might want to return the temp password
-          // tempPassword: process.env.NODE_ENV === 'development' ? tempPassword : undefined,
+          // In development, return the temp password for testing
+          tempPassword: process.env.NODE_ENV === 'development' ? tempPassword : undefined,
         },
       });
     } catch (error: any) {
-      console.error('Invite user error:', error);
+      logger.error('Invite user error:', { error, userId: req.userId, email: req.body.email });
       if (error.code === 'P2002') {
         return res.status(400).json({ success: false, error: 'Email already exists' });
       }
@@ -589,7 +598,7 @@ export const usersController = {
 
       res.json({ success: true, data: updatedUser });
     } catch (error) {
-      console.error('Update user status error:', error);
+      logger.error('Update user status error:', { error, userId: req.userId, targetUserId: req.params.id, status: req.body.status });
       res.status(500).json({ success: false, error: 'Failed to update user status' });
     }
   },
@@ -652,7 +661,7 @@ export const usersController = {
         },
       });
     } catch (error) {
-      console.error('Update user role error:', error);
+      logger.error('Update user role error:', { error, userId: req.userId, targetUserId: req.params.id, role: req.body.role });
       res.status(500).json({ success: false, error: 'Failed to update user role' });
     }
   },
@@ -690,16 +699,16 @@ export const usersController = {
       // Remove user from organization (don't delete the user account itself)
       await prisma.organizationMember.delete({
         where: {
-          userId_organizationId: {
-            userId: id,
+          organizationId_userId: {
             organizationId: currentUserOrg.organizationId,
+            userId: id,
           },
         },
       });
 
       res.json({ success: true, message: 'User removed from organization' });
     } catch (error) {
-      console.error('Delete user error:', error);
+      logger.error('Delete user error:', { error, userId: req.userId, targetUserId: req.params.id });
       res.status(500).json({ success: false, error: 'Failed to delete user' });
     }
   },
@@ -773,7 +782,7 @@ export const usersController = {
 
       res.json({ success: true, message: `Bulk ${action} completed successfully` });
     } catch (error) {
-      console.error('Bulk update users error:', error);
+      logger.error('Bulk update users error:', { error, userId: req.userId, count: req.body.userIds?.length });
       res.status(500).json({ success: false, error: 'Failed to perform bulk operation' });
     }
   },

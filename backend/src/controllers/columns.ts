@@ -5,6 +5,7 @@ import { executeAutomations } from '../services/automationService';
 import { AutomationTriggerType } from '@monday-clone/shared';
 import { notificationService } from '../services/notificationService';
 import { cacheService } from '../services/cacheService';
+import { logger } from '../utils/logger';
 
 const prisma = new PrismaClient();
 
@@ -20,7 +21,7 @@ export const columnController = {
 
       res.json({ success: true, data: columns });
     } catch (error: any) {
-      console.error('Get columns error:', error);
+      logger.error('Get columns error:', { error, userId: req.userId, boardId: req.params.boardId });
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -54,7 +55,7 @@ export const columnController = {
       // Invalidate cache
       await cacheService.invalidateBoard(boardId);
     } catch (error: any) {
-      console.error('Create column error:', error);
+      logger.error('Create column error:', { error, userId: req.userId, boardId: req.body.boardId });
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -85,7 +86,7 @@ export const columnController = {
       // Invalidate cache
       await cacheService.invalidateBoard(column.boardId);
     } catch (error: any) {
-      console.error('Update column error:', error);
+      logger.error('Update column error:', { error, userId: req.userId, columnId: req.params.id });
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -111,7 +112,7 @@ export const columnController = {
         await cacheService.invalidateBoard(column.boardId);
       }
     } catch (error: any) {
-      console.error('Delete column error:', error);
+      logger.error('Delete column error:', { error, userId: req.userId, columnId: req.params.id });
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -192,7 +193,7 @@ export const columnController = {
                   columnValue.item.boardId
                 );
               } catch (error) {
-                console.error('Failed to send assignment notification:', error);
+                logger.error('Failed to send assignment notification:', { error, assigneeId, itemId });
               }
             }
           }
@@ -200,8 +201,10 @@ export const columnController = {
 
         // STATUS column - notify item assignees about status change
         if (columnValue.column.type === 'STATUS') {
-          const oldStatus = oldColumnValue?.value?.label || oldColumnValue?.value || 'Unset';
-          const newStatus = value?.label || value || 'Unset';
+          const oldValue = oldColumnValue?.value as any;
+          const newValue = value as any;
+          const oldStatus = oldValue?.label || oldValue || 'Unset';
+          const newStatus = newValue?.label || newValue || 'Unset';
 
           if (oldStatus !== newStatus) {
             // Get all assignees from PERSON columns in a single query
@@ -230,8 +233,9 @@ export const columnController = {
               if (cv?.value) {
                 const assignees = Array.isArray(cv.value) ? cv.value : [cv.value];
                 for (const assignee of assignees) {
-                  if (assignee?.id) {
-                    assigneeUserIds.add(assignee.id);
+                  const assigneeObj = assignee as any;
+                  if (assigneeObj?.id) {
+                    assigneeUserIds.add(assigneeObj.id);
                   }
                 }
               }
@@ -250,7 +254,7 @@ export const columnController = {
                     columnValue.item.boardId
                   );
                 } catch (error) {
-                  console.error('Failed to send status change notification:', error);
+                  logger.error('Failed to send status change notification:', { error, assigneeId, itemId });
                 }
               }
             }
@@ -263,7 +267,7 @@ export const columnController = {
           columnId,
           oldValue: oldColumnValue?.value,
           newValue: value
-        }).catch(err => console.error('Automation error:', err));
+        }).catch(err => logger.error('Automation error:', { error: err, itemId, trigger: AutomationTriggerType.ITEM_UPDATED }));
 
         // Also trigger status changed if it's a status column
         if (columnValue.column.type === 'STATUS') {
@@ -272,7 +276,7 @@ export const columnController = {
             columnId,
             oldValue: oldColumnValue?.value,
             newValue: value
-          }).catch(err => console.error('Automation error:', err));
+          }).catch(err => logger.error('Automation error:', { error: err, itemId, trigger: AutomationTriggerType.STATUS_CHANGED }));
         }
       }
 
@@ -282,7 +286,7 @@ export const columnController = {
       await cacheService.invalidateItem(itemId);
       await cacheService.invalidateBoard(columnValue.item.boardId);
     } catch (error: any) {
-      console.error('Update column value error:', error);
+      logger.error('Update column value error:', { error, userId: req.userId, columnId: req.params.id, itemId: req.body.itemId });
       res.status(500).json({ success: false, error: error.message });
     }
   }

@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth';
+import { logger } from '../utils/logger';
 
 const prisma = new PrismaClient();
 
@@ -22,7 +23,7 @@ export const formsController = {
 
       res.json({ success: true, data: forms });
     } catch (error: any) {
-      console.error('Get forms error:', error);
+      logger.error('Get forms error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -47,7 +48,7 @@ export const formsController = {
 
       res.json({ success: true, data: form });
     } catch (error: any) {
-      console.error('Get form error:', error);
+      logger.error('Get form error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -79,7 +80,7 @@ export const formsController = {
 
       res.json({ success: true, data: form });
     } catch (error: any) {
-      console.error('Get form by token error:', error);
+      logger.error('Get form by token error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -102,7 +103,7 @@ export const formsController = {
 
       res.status(201).json({ success: true, data: form });
     } catch (error: any) {
-      console.error('Create form error:', error);
+      logger.error('Create form error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -126,7 +127,7 @@ export const formsController = {
 
       res.json({ success: true, data: form });
     } catch (error: any) {
-      console.error('Update form error:', error);
+      logger.error('Update form error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -142,7 +143,7 @@ export const formsController = {
 
       res.json({ success: true, message: 'Form deleted' });
     } catch (error: any) {
-      console.error('Delete form error:', error);
+      logger.error('Delete form error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -216,7 +217,7 @@ export const formsController = {
         message: 'Form submitted successfully'
       });
     } catch (error: any) {
-      console.error('Submit form error:', error);
+      logger.error('Submit form error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -253,7 +254,7 @@ export const formsController = {
         }
       });
     } catch (error: any) {
-      console.error('Get submissions error:', error);
+      logger.error('Get submissions error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -293,7 +294,7 @@ export const formsController = {
         }
       });
     } catch (error: any) {
-      console.error('Get analytics error:', error);
+      logger.error('Get analytics error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   }

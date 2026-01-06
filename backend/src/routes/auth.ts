@@ -137,6 +137,11 @@ const router = Router();
 router.post('/register', authController.register);
 router.post('/login', authController.login);
 router.post('/verify-2fa', authController.verifyTwoFactor);
+router.post('/forgot-password', authController.requestPasswordReset);
+router.post('/verify-reset-token', authController.verifyPasswordResetToken);
+router.post('/reset-password', authController.resetPassword);
+router.post('/verify-email', authController.verifyEmail);
+router.post('/test-email', authController.testEmail); // Test endpoint - remove in production
 router.get('/me', authenticate, authController.getCurrentUser);
 
 export default router;

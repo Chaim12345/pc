@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth';
+import { logger } from '../utils/logger';
 
 const prisma = new PrismaClient();
 
@@ -22,7 +23,7 @@ export const activityLogsController = {
     try {
       return await prisma.activityLog.create({ data });
     } catch (error) {
-      console.error('Activity log error:', error);
+      logger.error('Activity log error:', error);
     }
   },
 
@@ -91,7 +92,7 @@ export const activityLogsController = {
         }
       });
     } catch (error: any) {
-      console.error('Get activity logs error:', error);
+      logger.error('Get activity logs error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -140,7 +141,7 @@ export const activityLogsController = {
         }
       });
     } catch (error: any) {
-      console.error('Get board activity logs error:', error);
+      logger.error('Get board activity logs error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -185,7 +186,7 @@ export const activityLogsController = {
         }
       });
     } catch (error: any) {
-      console.error('Get item activity logs error:', error);
+      logger.error('Get item activity logs error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -231,7 +232,7 @@ export const activityLogsController = {
         res.json({ success: true, data: logs });
       }
     } catch (error: any) {
-      console.error('Export activity logs error:', error);
+      logger.error('Export activity logs error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   }

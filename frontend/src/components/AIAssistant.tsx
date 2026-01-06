@@ -20,6 +20,13 @@ export default function AIAssistant({ boardId, groupId, isOpen, onClose, context
   const [result, setResult] = useState<any>(null)
   const descriptionRef = useRef<HTMLTextAreaElement>(null)
 
+  const handleClose = () => {
+    setActiveFeature(null)
+    setResult(null)
+    setDescription('')
+    onClose()
+  }
+
   // Focus description input when name feature is selected
   useEffect(() => {
     if (activeFeature === 'name' && descriptionRef.current) {
@@ -103,13 +110,6 @@ export default function AIAssistant({ boardId, groupId, isOpen, onClose, context
     } else if (activeFeature === 'name' && description.trim()) {
       suggestNameMutation.mutate(description)
     }
-  }
-
-  const handleClose = () => {
-    setActiveFeature(null)
-    setResult(null)
-    setDescription('')
-    onClose()
   }
 
   if (!isOpen) return null

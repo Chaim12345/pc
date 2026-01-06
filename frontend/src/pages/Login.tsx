@@ -17,7 +17,7 @@ export default function Login() {
   const [twoFactorToken, setTwoFactorToken] = useState('')
   const [twoFactorLoading, setTwoFactorLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
-  const { login, verifyTwoFactor } = useAuth()
+  const { login, verifyTwoFactor, user } = useAuth()
   const navigate = useNavigate()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -46,6 +46,9 @@ export default function Login() {
         setTwoFactorRequired(true)
         setTempToken(loginResult.tempToken || '')
       } else {
+        // Small delay to allow React to process state updates before navigation
+        // This ensures the user state is set before PrivateRoute checks it
+        await new Promise(resolve => setTimeout(resolve, 100))
         navigate('/dashboard')
       }
     } catch (err: any) {
@@ -70,6 +73,8 @@ export default function Login() {
 
     try {
       await verifyTwoFactor(tempToken, twoFactorToken)
+      // Small delay to allow React to process state updates before navigation
+      await new Promise(resolve => setTimeout(resolve, 100))
       navigate('/dashboard')
     } catch (err: any) {
       setError(err.response?.data?.error || 'Invalid 2FA token')

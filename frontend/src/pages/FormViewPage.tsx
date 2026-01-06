@@ -70,7 +70,7 @@ export default function FormViewPage() {
           errors[field.id] = 'Please enter a valid email address'
         }
         // Phone validation (basic)
-        if (field.type === 'phone' && formData[field.id] && !/^[\d\s\-\+\(\)]+$/.test(formData[field.id])) {
+        if (field.type === 'phone' && formData[field.id] && !/^[\d\s\-+()]+$/.test(formData[field.id])) {
           errors[field.id] = 'Please enter a valid phone number'
         }
       }

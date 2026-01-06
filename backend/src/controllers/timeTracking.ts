@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth';
+import { logger } from '../utils/logger';
 
 const prisma = new PrismaClient();
 
@@ -26,7 +27,7 @@ export const timeTrackingController = {
 
       res.json({ success: true, data: entries });
     } catch (error: any) {
-      console.error('Get time entries error:', error);
+      logger.error('Get time entries error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -72,7 +73,7 @@ export const timeTrackingController = {
 
       res.status(201).json({ success: true, data: entry });
     } catch (error: any) {
-      console.error('Start timer error:', error);
+      logger.error('Start timer error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -123,7 +124,7 @@ export const timeTrackingController = {
 
       res.json({ success: true, data: updatedEntry });
     } catch (error: any) {
-      console.error('Stop timer error:', error);
+      logger.error('Stop timer error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -156,7 +157,7 @@ export const timeTrackingController = {
 
       res.status(201).json({ success: true, data: entry });
     } catch (error: any) {
-      console.error('Create manual entry error:', error);
+      logger.error('Create manual entry error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -186,7 +187,7 @@ export const timeTrackingController = {
 
       res.json({ success: true, data: entry });
     } catch (error: any) {
-      console.error('Update time entry error:', error);
+      logger.error('Update time entry error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -201,7 +202,7 @@ export const timeTrackingController = {
 
       res.json({ success: true, message: 'Time entry deleted' });
     } catch (error: any) {
-      console.error('Delete time entry error:', error);
+      logger.error('Delete time entry error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   }

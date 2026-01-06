@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { logger } from '../utils/logger';
 
 export class TeamsService {
   static async sendNotification(webhookUrl: string, message: string): Promise<void> {
@@ -18,7 +19,7 @@ export class TeamsService {
         }
       });
     } catch (error) {
-      console.error('Failed to send Teams notification:', error);
+      logger.error('Failed to send Teams notification:', { error });
       throw new Error('Failed to send Teams notification');
     }
   }

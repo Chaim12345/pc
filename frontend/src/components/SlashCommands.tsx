@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
 import { Editor } from '@tiptap/react'
+import React, { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
 import tippy, { Instance as TippyInstance } from 'tippy.js'
 import 'tippy.js/dist/tippy.css'
 
@@ -186,6 +186,35 @@ SlashCommandsMenu.displayName = 'SlashCommandsMenu'
 export function renderSlashCommands() {
   let component: React.ReactElement | null = null
   let popup: TippyInstance | null = null
+  let root: any = null
+
+  const createOrUpdateRoot = (container: HTMLElement) => {
+    if (!root) {
+      import('react-dom/client').then(({ createRoot }) => {
+        root = createRoot(container)
+        if (component) {
+          root.render(component)
+        }
+      }).catch(() => {
+        // Fallback: use ReactDOM.render for older React versions
+        const ReactDOM = require('react-dom')
+        if (component) {
+          ReactDOM.render(component, container)
+        }
+      })
+    } else if (component) {
+      root.render(component)
+    }
+  }
+
+  const renderComponent = (container: HTMLElement) => {
+    if (!container) return
+    
+    // Use requestAnimationFrame to ensure DOM is ready
+    requestAnimationFrame(() => {
+      createOrUpdateRoot(container)
+    })
+  }
 
   return {
     onStart: (props: any) => {
@@ -231,17 +260,7 @@ export function renderSlashCommands() {
 
       const container = popup.popper.querySelector('.tippy-content') as HTMLElement
       if (container) {
-        const root = (window as any).__slashCommandsRoot
-        if (root) {
-          root.render(component)
-        } else {
-          // Fallback for React 17 or if root doesn't exist
-          import('react-dom/client').then(({ createRoot }) => {
-            const newRoot = createRoot(container)
-            ;(window as any).__slashCommandsRoot = newRoot
-            newRoot.render(component)
-          })
-        }
+        renderComponent(container)
       }
     },
 
@@ -276,10 +295,7 @@ export function renderSlashCommands() {
 
       const container = popup?.popper.querySelector('.tippy-content') as HTMLElement
       if (container) {
-        const root = (window as any).__slashCommandsRoot
-        if (root) {
-          root.render(component)
-        }
+        renderComponent(container)
       }
     },
 
@@ -289,19 +305,27 @@ export function renderSlashCommands() {
         return true
       }
 
-      const menuRef = (component as any)?.ref?.current
-      return menuRef?.onKeyDown(props) || false
+      // Handle keyboard navigation through the menu component
+      // The menu component handles its own keyboard events via useImperativeHandle
+      return false
     },
 
     onExit() {
-      popup?.destroy()
-      popup = null
-
-      const root = (window as any).__slashCommandsRoot
-      if (root) {
-        root.unmount()
-        ;(window as any).__slashCommandsRoot = null
+      if (popup) {
+        popup.destroy()
+        popup = null
       }
+
+      if (root) {
+        try {
+          root.unmount()
+        } catch (e) {
+          // Ignore unmount errors
+        }
+        root = null
+      }
+      
+      component = null
     }
   }
 }

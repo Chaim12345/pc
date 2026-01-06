@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import { useState, useMemo, memo, useCallback } from 'react'
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, closestCenter, useDroppable } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { useSortable } from '@dnd-kit/sortable'
@@ -11,9 +11,13 @@ import { useToast } from '../contexts/ToastContext'
 import { SocketEvent } from '@monday-clone/shared'
 import ItemDetailModal from '../components/ItemDetailModal'
 import { logger } from '../utils/logger'
+import type { FilterRule } from '../components/FilterModal'
+import type { SortRule } from '../components/SortModal'
 
 interface KanbanViewProps {
   board: Board
+  filterRules?: FilterRule[]
+  sortRules?: SortRule[]
 }
 
 interface KanbanColumnProps {
@@ -369,7 +373,7 @@ const KanbanColumn = memo(function KanbanColumn({ label, column, items, boardId,
 
 KanbanColumn.displayName = 'KanbanColumn'
 
-export default function KanbanView({ board: boardProp }: KanbanViewProps) {
+export default function KanbanView({ board: boardProp, filterRules = [], sortRules = [] }: KanbanViewProps) {
   const { socket } = useSocket()
   const { showToast } = useToast()
   const queryClient = useQueryClient()

@@ -81,6 +81,29 @@
     "theme": "Design",
     "darkMode": "Dunkler Modus",
     "lightMode": "Heller Modus"
+  },
+  "dashboard": {
+    "myWork": "Meine Arbeit",
+    "groups": "Gruppen",
+    "team": "Team",
+    "noBoards": "Noch keine Boards",
+    "noBoardsDescription": "Erstellen Sie Ihr erstes Board, um Ihre Arbeit zu organisieren und mit Ihrem Team zusammenzuarbeiten"
+  },
+  "navigation": {
+    "home": "Startseite",
+    "dashboards": "Boards",
+    "templates": "Vorlagen",
+    "settings": "Einstellungen",
+    "teams": "Teams",
+    "users": "Benutzer",
+    "workdocs": "Dokumente",
+    "myBoards": "Meine Boards",
+    "favorites": "Favoriten",
+    "shortcuts": "Tastenkürzel",
+    "noBoardsYet": "Noch keine Boards",
+    "createNewBoard": "Neues Board erstellen",
+    "boardTemplates": "Board-Vorlagen",
+    "userManagement": "Benutzerverwaltung"
   }
 }
 

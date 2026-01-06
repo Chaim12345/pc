@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth';
 import { cacheService } from '../services/cacheService';
+import { logger } from '../utils/logger';
 
 const prisma = new PrismaClient();
 
@@ -58,7 +59,7 @@ export const boardController = {
 
       res.json({ success: true, data: boards });
     } catch (error: any) {
-      console.error('Get boards error:', error);
+      logger.error('Get boards error:', { error, userId: req.userId });
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -132,7 +133,7 @@ export const boardController = {
 
       res.json({ success: true, data: board });
     } catch (error: any) {
-      console.error('Get board error:', error);
+      logger.error('Get board error:', { error, userId: req.userId, boardId: req.params.id });
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -187,7 +188,7 @@ export const boardController = {
       // Invalidate cache
       await cacheService.invalidateBoard(board.id);
     } catch (error: any) {
-      console.error('Create board error:', error);
+      logger.error('Create board error:', { error, userId: req.userId, boardName: req.body.name });
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -207,7 +208,7 @@ export const boardController = {
       // Invalidate cache
       await cacheService.invalidateBoard(id);
     } catch (error: any) {
-      console.error('Update board error:', error);
+      logger.error('Update board error:', { error, userId: req.userId, boardId: req.params.id });
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -250,7 +251,7 @@ export const boardController = {
 
       res.json({ success: true, data: boards });
     } catch (error: any) {
-      console.error('Search boards error:', error);
+      logger.error('Search boards error:', { error, userId: req.userId, query: req.query.search });
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -268,7 +269,7 @@ export const boardController = {
       // Invalidate cache
       await cacheService.invalidateBoard(id);
     } catch (error: any) {
-      console.error('Delete board error:', error);
+      logger.error('Delete board error:', { error, userId: req.userId, boardId: req.params.id });
       res.status(500).json({ success: false, error: error.message });
     }
   }

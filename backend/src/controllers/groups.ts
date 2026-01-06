@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth';
+import { logger } from '../utils/logger';
 
 const prisma = new PrismaClient();
 
@@ -28,7 +29,7 @@ export const groupController = {
 
       res.json({ success: true, data: groups });
     } catch (error: any) {
-      console.error('Get groups error:', error);
+      logger.error('Get groups error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -56,7 +57,7 @@ export const groupController = {
 
       res.status(201).json({ success: true, data: group });
     } catch (error: any) {
-      console.error('Create group error:', error);
+      logger.error('Create group error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -77,7 +78,7 @@ export const groupController = {
 
       res.json({ success: true, data: group });
     } catch (error: any) {
-      console.error('Update group error:', error);
+      logger.error('Update group error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   },
@@ -92,7 +93,7 @@ export const groupController = {
 
       res.json({ success: true, message: 'Group deleted' });
     } catch (error: any) {
-      console.error('Delete group error:', error);
+      logger.error('Delete group error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   }
